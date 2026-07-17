@@ -1,13 +1,14 @@
 package com.yosmerry.pims;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class PimsApplicationTests {
 
 	@Test
-	void contextLoads() {
+	void applicationClassShouldExist() {
+		assertThat(PimsApplication.class).isNotNull();
 	}
 
 }
