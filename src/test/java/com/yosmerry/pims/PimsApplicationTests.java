@@ -1,10 +1,10 @@
-package com.yosmerry.pims_be;
+package com.yosmerry.pims;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class PimsBeApplicationTests {
+class PimsApplicationTests {
 
 	@Test
 	void contextLoads() {
