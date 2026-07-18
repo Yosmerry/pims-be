@@ -143,6 +143,40 @@ class AuthServiceTest {
   }
 
   @Test
+  void shouldLogoutUser() {
+    when(tokenService.revokeRefreshToken(
+        org.mockito.ArgumentMatchers.eq("refresh-token"),
+        org.mockito.ArgumentMatchers.eq("USR000001"),
+        org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(true);
+
+    authService.logout(
+        new RefreshTokenRequest("refresh-token"),
+        "USR000001");
+
+    verify(tokenService).revokeRefreshToken(
+        org.mockito.ArgumentMatchers.eq("refresh-token"),
+        org.mockito.ArgumentMatchers.eq("USR000001"),
+        org.mockito.ArgumentMatchers.anyLong());
+  }
+
+  @Test
+  void shouldRejectInvalidRefreshTokenOnLogout() {
+    when(tokenService.revokeRefreshToken(
+        org.mockito.ArgumentMatchers.eq("invalid-token"),
+        org.mockito.ArgumentMatchers.eq("USR000001"),
+        org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(false);
+    ThrowingCallable action = () -> authService.logout(
+        new RefreshTokenRequest("invalid-token"),
+        "USR000001");
+
+    assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+        .isInstanceOf(ApiAuthenticationException.class)
+        .hasMessage(ErrorCodes.INVALID);
+  }
+
+  @Test
   void shouldRegisterUser() {
     RegisterRequest request = validRequest();
     when(codeGenerator.next(CodeType.USER)).thenReturn("USR000001");

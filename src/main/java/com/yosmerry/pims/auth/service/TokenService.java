@@ -82,6 +82,27 @@ public class TokenService {
         .filter(refreshToken -> refreshToken.getExpiresDate() > currentTime);
   }
 
+  public boolean revokeRefreshToken(
+      String refreshTokenValue,
+      String userCode,
+      long currentTime) {
+    Optional<RefreshToken> storedToken = refreshTokenRepository
+        .findByTokenHashAndMarkForDeleteFalse(hash(refreshTokenValue))
+        .filter(refreshToken -> refreshToken.getUserCode().equals(userCode));
+
+    if (storedToken.isEmpty()) {
+      return false;
+    }
+
+    RefreshToken refreshToken = storedToken.get();
+    if (refreshToken.getRevokedDate() == null) {
+      refreshToken.setRevokedDate(currentTime);
+      refreshToken.setUpdatedBy(userCode);
+      refreshTokenRepository.save(refreshToken);
+    }
+    return true;
+  }
+
   public long getAccessTokenExpiresIn() {
     return authProperties.accessTokenExpiresIn();
   }

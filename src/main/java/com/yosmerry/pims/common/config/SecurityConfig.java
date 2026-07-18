@@ -1,6 +1,8 @@
 package com.yosmerry.pims.common.config;
 
+import com.yosmerry.pims.auth.security.ApiAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.config.Customizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,6 +14,8 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+  private final ApiAuthenticationEntryPoint apiAuthenticationEntryPoint;
 
   private static final String[] PUBLIC_ENDPOINTS = {
       "/api/v1/auth/register",
@@ -38,7 +42,12 @@ public class SecurityConfig {
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(authorize -> authorize
             .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-            .anyRequest().authenticated());
+            .anyRequest().authenticated())
+        .oauth2ResourceServer(oauth2 -> oauth2
+            .authenticationEntryPoint(apiAuthenticationEntryPoint)
+            .jwt(Customizer.withDefaults()))
+        .exceptionHandling(exception -> exception
+            .authenticationEntryPoint(apiAuthenticationEntryPoint));
 
     return http.build();
   }

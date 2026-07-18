@@ -15,12 +15,15 @@ import com.yosmerry.pims.common.response.ApiResponse;
 import com.yosmerry.pims.common.response.ResponseUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -80,5 +83,23 @@ public class AuthController {
     return ResponseUtils.ok(
         response,
         requestHeaders.requestId());
+  }
+
+  @PostMapping("/logout")
+  @Operation(description = "Revoke the refresh token and end the user session")
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ApiResponse<Void>> logout(
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
+      @CookieValue(name = "refresh_token", required = false) String refreshToken,
+      @AuthenticationPrincipal Jwt jwt) {
+    RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
+    authService.logout(
+        new RefreshTokenRequest(refreshToken),
+        jwt.getSubject());
+
+    return ResponseUtils.ok(
+        null,
+        requestHeaders.requestId(),
+        refreshTokenCookieFactory.clear());
   }
 }

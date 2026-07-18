@@ -126,6 +126,19 @@ public class AuthService {
         .build();
   }
 
+  @Transactional
+  public void logout(
+      @Valid RefreshTokenRequest request,
+      String userCode) {
+    boolean revoked = tokenService.revokeRefreshToken(
+        request.refreshToken(),
+        userCode,
+        System.currentTimeMillis());
+    if (!revoked) {
+      throw refreshTokenException(ErrorCodes.INVALID);
+    }
+  }
+
   private ApiAuthenticationException refreshTokenException(String errorCode) {
     return new ApiAuthenticationException(
         HttpStatus.UNAUTHORIZED,
