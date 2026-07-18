@@ -2,12 +2,13 @@ package com.yosmerry.pims.auth.controller;
 
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
+import com.yosmerry.pims.auth.dto.RefreshTokenRequest;
+import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
-import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.model.LoginResult;
+import com.yosmerry.pims.auth.security.RefreshTokenCookieFactory;
 import com.yosmerry.pims.auth.service.AuthService;
-import com.yosmerry.pims.common.config.AuthProperties;
 import com.yosmerry.pims.common.constant.BasePathNames;
 import com.yosmerry.pims.common.request.RequestHeaders;
 import com.yosmerry.pims.common.response.ApiResponse;
@@ -34,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final AuthService authService;
-  private final AuthProperties authProperties;
+  private final RefreshTokenCookieFactory refreshTokenCookieFactory;
 
   @PostMapping("/register")
   @Operation(description = "Create a new user account")
@@ -50,13 +51,16 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  @Operation(description = "Authenticate user and refresh tokens")
+  @Operation(description = "Authenticate user and issue access and refresh tokens")
   public ResponseEntity<ApiResponse<LoginResponse>> login(
       @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
       @Valid @RequestBody LoginRequest request) {
     RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
     LoginResult result = authService.login(request);
-    ResponseCookie refreshTokenCookie = createRefreshTokenCookie(result);
+
+    ResponseCookie refreshTokenCookie = refreshTokenCookieFactory.create(
+        result.refreshToken(),
+        result.refreshTokenExpiresIn());
 
     return ResponseUtils.ok(
         result.response(),
@@ -70,20 +74,11 @@ public class AuthController {
       @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
       @CookieValue(name = "refresh_token", required = false) String refreshToken) {
     RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
-    RefreshTokenResponse response = authService.refresh(refreshToken);
+    RefreshTokenResponse response = authService.refresh(
+        new RefreshTokenRequest(refreshToken));
 
     return ResponseUtils.ok(
         response,
         requestHeaders.requestId());
-  }
-
-  private ResponseCookie createRefreshTokenCookie(LoginResult result) {
-    return ResponseCookie.from("refresh_token", result.refreshToken())
-        .httpOnly(true)
-        .secure(authProperties.cookieSecure())
-        .sameSite("Strict")
-        .path(BasePathNames.AUTH)
-        .maxAge(result.refreshTokenExpiresIn())
-        .build();
   }
 }

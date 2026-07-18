@@ -2,9 +2,10 @@ package com.yosmerry.pims.auth.service;
 
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
+import com.yosmerry.pims.auth.dto.RefreshTokenRequest;
+import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
-import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.entity.RefreshToken;
 import com.yosmerry.pims.auth.model.IssuedTokens;
 import com.yosmerry.pims.auth.model.LoginResult;
@@ -15,15 +16,18 @@ import com.yosmerry.pims.common.exception.ApiAuthenticationException;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.user.entity.User;
 import com.yosmerry.pims.user.repository.UserRepository;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.Locale;
 
 @Service
+@Validated
 @RequiredArgsConstructor
 public class AuthService {
 
@@ -105,14 +109,10 @@ public class AuthService {
   }
 
   @Transactional(readOnly = true)
-  public RefreshTokenResponse refresh(String refreshTokenValue) {
-    if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
-      throw refreshTokenException(ErrorCodes.MISSING);
-    }
-
+  public RefreshTokenResponse refresh(@Valid RefreshTokenRequest request) {
     long currentTime = System.currentTimeMillis();
     RefreshToken refreshToken = tokenService
-        .findValidRefreshToken(refreshTokenValue, currentTime)
+        .findValidRefreshToken(request.refreshToken(), currentTime)
         .orElseThrow(() -> refreshTokenException(ErrorCodes.INVALID));
     User user = userRepository
         .findByCodeAndMarkForDeleteFalse(refreshToken.getUserCode())
