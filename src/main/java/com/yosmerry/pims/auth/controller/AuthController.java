@@ -23,8 +23,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -92,12 +90,9 @@ public class AuthController {
   @SecurityRequirement(name = "bearerAuth")
   public ResponseEntity<ApiResponse<Void>> logout(
       @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
-      @CookieValue(name = "refresh_token", required = false) String refreshToken,
-      @AuthenticationPrincipal Jwt jwt) {
+      @CookieValue(name = "refresh_token", required = false) String refreshToken) {
     RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
-    authService.logout(
-        new RefreshTokenRequest(refreshToken),
-        jwt.getSubject());
+    authService.logout(new RefreshTokenRequest(refreshToken));
 
     return ResponseUtils.ok(
         null,
@@ -109,10 +104,9 @@ public class AuthController {
   @Operation(description = "Get the currently authenticated user")
   @SecurityRequirement(name = "bearerAuth")
   public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
-      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
-      @AuthenticationPrincipal Jwt jwt) {
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders) {
     RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
-    CurrentUserResponse response = authService.getCurrentUser(jwt.getSubject());
+    CurrentUserResponse response = authService.getCurrentUser();
 
     return ResponseUtils.ok(
         response,

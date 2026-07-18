@@ -1,6 +1,7 @@
 package com.yosmerry.pims.auth.controller;
 
 import com.yosmerry.pims.auth.security.RefreshTokenCookieFactory;
+import com.yosmerry.pims.auth.security.CurrentUserProvider;
 import com.yosmerry.pims.auth.service.AuthService;
 import com.yosmerry.pims.auth.service.TokenService;
 import com.yosmerry.pims.common.exception.GlobalExceptionHandler;
@@ -39,6 +40,9 @@ class AuthControllerTest {
   private TokenService tokenService;
 
   @Mock
+  private CurrentUserProvider currentUserProvider;
+
+  @Mock
   private RefreshTokenCookieFactory refreshTokenCookieFactory;
 
   private MockMvc mockMvc;
@@ -52,7 +56,8 @@ class AuthControllerTest {
         userRepository,
         passwordEncoder,
         codeGenerator,
-        tokenService);
+        tokenService,
+        currentUserProvider);
     ProxyFactory proxyFactory = new ProxyFactory(authServiceTarget);
     proxyFactory.setProxyTargetClass(true);
     proxyFactory.addAdvice(new MethodValidationInterceptor(
@@ -81,6 +86,7 @@ class AuthControllerTest {
         userRepository,
         passwordEncoder,
         codeGenerator,
-        tokenService);
+        tokenService,
+        currentUserProvider);
   }
 }

@@ -9,6 +9,7 @@ import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.entity.RefreshToken;
 import com.yosmerry.pims.auth.model.IssuedTokens;
 import com.yosmerry.pims.auth.model.LoginResult;
+import com.yosmerry.pims.auth.security.CurrentUserProvider;
 import com.yosmerry.pims.common.constant.ErrorCodes;
 import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
@@ -22,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,6 +45,9 @@ class AuthServiceTest {
   @Mock
   private TokenService tokenService;
 
+  @Mock
+  private CurrentUserProvider currentUserProvider;
+
   private AuthService authService;
 
   @BeforeEach
@@ -53,7 +56,8 @@ class AuthServiceTest {
         userRepository,
         passwordEncoder,
         codeGenerator,
-        tokenService);
+        tokenService,
+        currentUserProvider);
   }
 
   @Test
@@ -146,15 +150,15 @@ class AuthServiceTest {
 
   @Test
   void shouldLogoutUser() {
+    User user = activeUser();
+    when(currentUserProvider.requireActiveUser()).thenReturn(user);
     when(tokenService.revokeRefreshToken(
         org.mockito.ArgumentMatchers.eq("refresh-token"),
         org.mockito.ArgumentMatchers.eq("USR000001"),
         org.mockito.ArgumentMatchers.anyLong()))
         .thenReturn(true);
 
-    authService.logout(
-        new RefreshTokenRequest("refresh-token"),
-        "USR000001");
+    authService.logout(new RefreshTokenRequest("refresh-token"));
 
     verify(tokenService).revokeRefreshToken(
         org.mockito.ArgumentMatchers.eq("refresh-token"),
@@ -164,14 +168,15 @@ class AuthServiceTest {
 
   @Test
   void shouldRejectInvalidRefreshTokenOnLogout() {
+    User user = activeUser();
+    when(currentUserProvider.requireActiveUser()).thenReturn(user);
     when(tokenService.revokeRefreshToken(
         org.mockito.ArgumentMatchers.eq("invalid-token"),
         org.mockito.ArgumentMatchers.eq("USR000001"),
         org.mockito.ArgumentMatchers.anyLong()))
         .thenReturn(false);
     ThrowingCallable action = () -> authService.logout(
-        new RefreshTokenRequest("invalid-token"),
-        "USR000001");
+        new RefreshTokenRequest("invalid-token"));
 
     assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
         .isInstanceOf(ApiAuthenticationException.class)
@@ -184,10 +189,9 @@ class AuthServiceTest {
     user.setLastLoginDate(1784250000000L);
     user.setCreatedDate(1784240000000L);
     user.setUpdatedDate(1784250000000L);
-    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
-        .thenReturn(java.util.Optional.of(user));
+    when(currentUserProvider.requireActiveUser()).thenReturn(user);
 
-    CurrentUserResponse response = authService.getCurrentUser("USR000001");
+    CurrentUserResponse response = authService.getCurrentUser();
 
     assertThat(response.code()).isEqualTo("USR000001");
     assertThat(response.name()).isEqualTo("Yos Merry");
@@ -196,31 +200,6 @@ class AuthServiceTest {
     assertThat(response.lastLoginDate()).isEqualTo(1784250000000L);
     assertThat(response.createdDate()).isEqualTo(1784240000000L);
     assertThat(response.updatedDate()).isEqualTo(1784250000000L);
-  }
-
-  @Test
-  void shouldRejectInactiveCurrentUser() {
-    User user = activeUser();
-    user.setStatus(ActiveStatus.INACTIVE);
-    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
-        .thenReturn(java.util.Optional.of(user));
-    ThrowingCallable action = () -> authService.getCurrentUser("USR000001");
-
-    assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
-        .isInstanceOf(ApiAuthenticationException.class)
-        .hasMessage(ErrorCodes.USER_INACTIVE);
-  }
-
-  @Test
-  void shouldRejectCurrentUserNotFound() {
-    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
-        .thenReturn(java.util.Optional.empty());
-    ThrowingCallable action = () -> authService.getCurrentUser("USR000001");
-
-    ApiAuthenticationException exception = (ApiAuthenticationException)
-        org.assertj.core.api.Assertions.catchThrowable(action);
-    assertThat(exception.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED);
-    assertThat(exception.getErrorCode()).isNull();
   }
 
   @Test

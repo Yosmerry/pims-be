@@ -10,6 +10,7 @@ import com.yosmerry.pims.auth.dto.RegisterResponse;
 import com.yosmerry.pims.auth.entity.RefreshToken;
 import com.yosmerry.pims.auth.model.IssuedTokens;
 import com.yosmerry.pims.auth.model.LoginResult;
+import com.yosmerry.pims.auth.security.CurrentUserProvider;
 import com.yosmerry.pims.common.constant.ErrorCodes;
 import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
@@ -36,6 +37,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final CodeGenerator codeGenerator;
   private final TokenService tokenService;
+  private final CurrentUserProvider currentUserProvider;
 
   @Transactional
   public RegisterResponse register(RegisterRequest request) {
@@ -128,12 +130,11 @@ public class AuthService {
   }
 
   @Transactional
-  public void logout(
-      @Valid RefreshTokenRequest request,
-      String userCode) {
+  public void logout(@Valid RefreshTokenRequest request) {
+    User user = currentUserProvider.requireActiveUser();
     boolean revoked = tokenService.revokeRefreshToken(
         request.refreshToken(),
-        userCode,
+        user.getCode(),
         System.currentTimeMillis());
     if (!revoked) {
       throw refreshTokenException(ErrorCodes.INVALID);
@@ -141,17 +142,8 @@ public class AuthService {
   }
 
   @Transactional(readOnly = true)
-  public CurrentUserResponse getCurrentUser(String userCode) {
-    User user = userRepository
-        .findByCodeAndMarkForDeleteFalse(userCode)
-        .orElseThrow(() -> new ApiAuthenticationException(
-            HttpStatus.UNAUTHORIZED));
-
-    if (user.getStatus() != ActiveStatus.ACTIVE) {
-      throw new ApiAuthenticationException(
-          HttpStatus.FORBIDDEN,
-          ErrorCodes.USER_INACTIVE);
-    }
+  public CurrentUserResponse getCurrentUser() {
+    User user = currentUserProvider.requireActiveUser();
 
     return CurrentUserResponse.builder()
         .code(user.getCode())
