@@ -1,5 +1,6 @@
 package com.yosmerry.pims.auth.service;
 
+import com.yosmerry.pims.auth.dto.CurrentUserResponse;
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
 import com.yosmerry.pims.auth.dto.RefreshTokenRequest;
@@ -137,6 +138,30 @@ public class AuthService {
     if (!revoked) {
       throw refreshTokenException(ErrorCodes.INVALID);
     }
+  }
+
+  @Transactional(readOnly = true)
+  public CurrentUserResponse getCurrentUser(String userCode) {
+    User user = userRepository
+        .findByCodeAndMarkForDeleteFalse(userCode)
+        .orElseThrow(() -> new ApiAuthenticationException(
+            HttpStatus.UNAUTHORIZED));
+
+    if (user.getStatus() != ActiveStatus.ACTIVE) {
+      throw new ApiAuthenticationException(
+          HttpStatus.FORBIDDEN,
+          ErrorCodes.USER_INACTIVE);
+    }
+
+    return CurrentUserResponse.builder()
+        .code(user.getCode())
+        .name(user.getName())
+        .email(user.getEmail())
+        .status(user.getStatus().name())
+        .lastLoginDate(user.getLastLoginDate())
+        .createdDate(user.getCreatedDate())
+        .updatedDate(user.getUpdatedDate())
+        .build();
   }
 
   private ApiAuthenticationException refreshTokenException(String errorCode) {

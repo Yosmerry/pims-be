@@ -10,6 +10,10 @@ public class ApiAuthenticationException extends RuntimeException {
   private final String field;
   private final String errorCode;
 
+  public ApiAuthenticationException(HttpStatus status) {
+    this(status, null, null);
+  }
+
   public ApiAuthenticationException(HttpStatus status, String errorCode) {
     this(status, "authentication", errorCode);
   }

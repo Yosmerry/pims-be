@@ -1,5 +1,6 @@
 package com.yosmerry.pims.auth.service;
 
+import com.yosmerry.pims.auth.dto.CurrentUserResponse;
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -174,6 +176,51 @@ class AuthServiceTest {
     assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
         .isInstanceOf(ApiAuthenticationException.class)
         .hasMessage(ErrorCodes.INVALID);
+  }
+
+  @Test
+  void shouldGetCurrentUser() {
+    User user = activeUser();
+    user.setLastLoginDate(1784250000000L);
+    user.setCreatedDate(1784240000000L);
+    user.setUpdatedDate(1784250000000L);
+    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
+        .thenReturn(java.util.Optional.of(user));
+
+    CurrentUserResponse response = authService.getCurrentUser("USR000001");
+
+    assertThat(response.code()).isEqualTo("USR000001");
+    assertThat(response.name()).isEqualTo("Yos Merry");
+    assertThat(response.email()).isEqualTo("yos@example.com");
+    assertThat(response.status()).isEqualTo("ACTIVE");
+    assertThat(response.lastLoginDate()).isEqualTo(1784250000000L);
+    assertThat(response.createdDate()).isEqualTo(1784240000000L);
+    assertThat(response.updatedDate()).isEqualTo(1784250000000L);
+  }
+
+  @Test
+  void shouldRejectInactiveCurrentUser() {
+    User user = activeUser();
+    user.setStatus(ActiveStatus.INACTIVE);
+    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
+        .thenReturn(java.util.Optional.of(user));
+    ThrowingCallable action = () -> authService.getCurrentUser("USR000001");
+
+    assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+        .isInstanceOf(ApiAuthenticationException.class)
+        .hasMessage(ErrorCodes.USER_INACTIVE);
+  }
+
+  @Test
+  void shouldRejectCurrentUserNotFound() {
+    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
+        .thenReturn(java.util.Optional.empty());
+    ThrowingCallable action = () -> authService.getCurrentUser("USR000001");
+
+    ApiAuthenticationException exception = (ApiAuthenticationException)
+        org.assertj.core.api.Assertions.catchThrowable(action);
+    assertThat(exception.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(exception.getErrorCode()).isNull();
   }
 
   @Test

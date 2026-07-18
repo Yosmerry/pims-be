@@ -1,5 +1,6 @@
 package com.yosmerry.pims.auth.controller;
 
+import com.yosmerry.pims.auth.dto.CurrentUserResponse;
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
 import com.yosmerry.pims.auth.dto.RefreshTokenRequest;
@@ -25,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -101,5 +103,19 @@ public class AuthController {
         null,
         requestHeaders.requestId(),
         refreshTokenCookieFactory.clear());
+  }
+
+  @GetMapping("/me")
+  @Operation(description = "Get the currently authenticated user")
+  @SecurityRequirement(name = "bearerAuth")
+  public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
+      @AuthenticationPrincipal Jwt jwt) {
+    RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
+    CurrentUserResponse response = authService.getCurrentUser(jwt.getSubject());
+
+    return ResponseUtils.ok(
+        response,
+        requestHeaders.requestId());
   }
 }

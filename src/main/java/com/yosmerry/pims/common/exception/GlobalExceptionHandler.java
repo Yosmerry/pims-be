@@ -108,9 +108,12 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiErrorResponse> handleApiAuthentication(
       ApiAuthenticationException exception,
       HttpServletRequest request) {
-    Map<String, List<String>> errors = Map.of(
-        exception.getField(),
-        List.of(exception.getErrorCode()));
+    Map<String, List<String>> errors = new LinkedHashMap<>();
+    if (exception.getField() != null && exception.getErrorCode() != null) {
+      errors.put(
+          exception.getField(),
+          List.of(exception.getErrorCode()));
+    }
     return errorResponse(exception.getStatus(), errors, request);
   }
 
