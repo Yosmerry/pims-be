@@ -4,6 +4,8 @@ import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
+import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
+import com.yosmerry.pims.auth.entity.RefreshToken;
 import com.yosmerry.pims.auth.model.IssuedTokens;
 import com.yosmerry.pims.auth.model.LoginResult;
 import com.yosmerry.pims.common.constant.ErrorCodes;
@@ -100,5 +102,34 @@ public class AuthService {
         .refreshToken(tokens.refreshToken())
         .refreshTokenExpiresIn(tokens.refreshTokenExpiresIn())
         .build();
+  }
+
+  @Transactional(readOnly = true)
+  public RefreshTokenResponse refresh(String refreshTokenValue) {
+    if (refreshTokenValue == null || refreshTokenValue.isBlank()) {
+      throw refreshTokenException(ErrorCodes.MISSING);
+    }
+
+    long currentTime = System.currentTimeMillis();
+    RefreshToken refreshToken = tokenService
+        .findValidRefreshToken(refreshTokenValue, currentTime)
+        .orElseThrow(() -> refreshTokenException(ErrorCodes.INVALID));
+    User user = userRepository
+        .findByCodeAndMarkForDeleteFalse(refreshToken.getUserCode())
+        .filter(currentUser -> currentUser.getStatus() == ActiveStatus.ACTIVE)
+        .orElseThrow(() -> refreshTokenException(ErrorCodes.INVALID));
+
+    return RefreshTokenResponse.builder()
+        .accessToken(tokenService.generateAccessToken(user))
+        .tokenType("Bearer")
+        .expiresIn(tokenService.getAccessTokenExpiresIn())
+        .build();
+  }
+
+  private ApiAuthenticationException refreshTokenException(String errorCode) {
+    return new ApiAuthenticationException(
+        HttpStatus.UNAUTHORIZED,
+        "refreshToken",
+        errorCode);
   }
 }

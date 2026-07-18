@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
       ApiAuthenticationException exception,
       HttpServletRequest request) {
     Map<String, List<String>> errors = Map.of(
-        "authentication",
+        exception.getField(),
         List.of(exception.getErrorCode()));
     ApiErrorResponse response = new ApiErrorResponse(
         exception.getStatus().value(),

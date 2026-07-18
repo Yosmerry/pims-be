@@ -22,6 +22,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +36,7 @@ public class TokenService {
   private final AuthProperties authProperties;
 
   public IssuedTokens issue(User user, long currentTime) {
-    String accessToken = createAccessToken(user);
+    String accessToken = generateAccessToken(user);
     String refreshTokenValue = createRefreshTokenValue();
 
     RefreshToken refreshToken = new RefreshToken();
@@ -56,7 +57,7 @@ public class TokenService {
         .build();
   }
 
-  private String createAccessToken(User user) {
+  public String generateAccessToken(User user) {
     Instant issuedAt = Instant.now();
     JwtClaimsSet claims = JwtClaimsSet.builder()
         .issuer("pims-be")
@@ -70,6 +71,19 @@ public class TokenService {
     return jwtEncoder
         .encode(JwtEncoderParameters.from(header, claims))
         .getTokenValue();
+  }
+
+  public Optional<RefreshToken> findValidRefreshToken(
+      String refreshTokenValue,
+      long currentTime) {
+    return refreshTokenRepository
+        .findByTokenHashAndMarkForDeleteFalse(hash(refreshTokenValue))
+        .filter(refreshToken -> refreshToken.getRevokedDate() == null)
+        .filter(refreshToken -> refreshToken.getExpiresDate() > currentTime);
+  }
+
+  public long getAccessTokenExpiresIn() {
+    return authProperties.accessTokenExpiresIn();
   }
 
   private String createRefreshTokenValue() {

@@ -4,6 +4,7 @@ import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.LoginResponse;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
+import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
 import com.yosmerry.pims.auth.model.LoginResult;
 import com.yosmerry.pims.auth.service.AuthService;
 import com.yosmerry.pims.common.config.AuthProperties;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -60,6 +62,19 @@ public class AuthController {
         result.response(),
         requestHeaders.requestId(),
         refreshTokenCookie);
+  }
+
+  @PostMapping("/refresh")
+  @Operation(description = "Issue a new access token using a refresh token")
+  public ResponseEntity<ApiResponse<RefreshTokenResponse>> refresh(
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
+      @CookieValue(name = "refresh_token", required = false) String refreshToken) {
+    RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
+    RefreshTokenResponse response = authService.refresh(refreshToken);
+
+    return ResponseUtils.ok(
+        response,
+        requestHeaders.requestId());
   }
 
   private ResponseCookie createRefreshTokenCookie(LoginResult result) {

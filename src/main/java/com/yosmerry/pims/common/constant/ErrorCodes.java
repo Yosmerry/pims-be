@@ -17,5 +17,7 @@ public final class ErrorCodes {
   public static final String PASSWORD_MISMATCH = "PasswordMismatch";
   public static final String INVALID_CREDENTIALS = "InvalidCredentials";
   public static final String USER_INACTIVE = "UserInactive";
+  public static final String MISSING = "Missing";
+  public static final String INVALID = "Invalid";
 
 }

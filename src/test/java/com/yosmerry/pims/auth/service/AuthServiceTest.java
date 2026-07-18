@@ -3,6 +3,8 @@ package com.yosmerry.pims.auth.service;
 import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
+import com.yosmerry.pims.auth.dto.RefreshTokenResponse;
+import com.yosmerry.pims.auth.entity.RefreshToken;
 import com.yosmerry.pims.auth.model.IssuedTokens;
 import com.yosmerry.pims.auth.model.LoginResult;
 import com.yosmerry.pims.common.constant.ErrorCodes;
@@ -101,6 +103,49 @@ class AuthServiceTest {
     assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
         .isInstanceOf(ApiAuthenticationException.class)
         .hasMessage(ErrorCodes.USER_INACTIVE);
+  }
+
+  @Test
+  void shouldRefreshAccessToken() {
+    User user = activeUser();
+    RefreshToken refreshToken = new RefreshToken();
+    refreshToken.setUserCode(user.getCode());
+    when(tokenService.findValidRefreshToken(
+        org.mockito.ArgumentMatchers.eq("refresh-token"),
+        org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(java.util.Optional.of(refreshToken));
+    when(userRepository.findByCodeAndMarkForDeleteFalse("USR000001"))
+        .thenReturn(java.util.Optional.of(user));
+    when(tokenService.generateAccessToken(user)).thenReturn("new-access-token");
+    when(tokenService.getAccessTokenExpiresIn()).thenReturn(900L);
+
+    RefreshTokenResponse response = authService.refresh("refresh-token");
+
+    assertThat(response.accessToken()).isEqualTo("new-access-token");
+    assertThat(response.tokenType()).isEqualTo("Bearer");
+    assertThat(response.expiresIn()).isEqualTo(900);
+  }
+
+  @Test
+  void shouldRejectMissingRefreshToken() {
+    ThrowingCallable action = () -> authService.refresh(null);
+
+    assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+        .isInstanceOf(ApiAuthenticationException.class)
+        .hasMessage(ErrorCodes.MISSING);
+  }
+
+  @Test
+  void shouldRejectInvalidRefreshToken() {
+    when(tokenService.findValidRefreshToken(
+        org.mockito.ArgumentMatchers.eq("invalid-token"),
+        org.mockito.ArgumentMatchers.anyLong()))
+        .thenReturn(java.util.Optional.empty());
+    ThrowingCallable action = () -> authService.refresh("invalid-token");
+
+    assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+        .isInstanceOf(ApiAuthenticationException.class)
+        .hasMessage(ErrorCodes.INVALID);
   }
 
   @Test
