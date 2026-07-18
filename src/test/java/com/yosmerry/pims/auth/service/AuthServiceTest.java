@@ -1,8 +1,14 @@
 package com.yosmerry.pims.auth.service;
 
+import com.yosmerry.pims.auth.dto.LoginRequest;
 import com.yosmerry.pims.auth.dto.RegisterRequest;
 import com.yosmerry.pims.auth.dto.RegisterResponse;
+import com.yosmerry.pims.auth.model.IssuedTokens;
+import com.yosmerry.pims.auth.model.LoginResult;
+import com.yosmerry.pims.common.constant.ErrorCodes;
+import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
+import com.yosmerry.pims.common.exception.ApiAuthenticationException;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.user.entity.User;
 import com.yosmerry.pims.user.repository.UserRepository;
@@ -30,11 +36,65 @@ class AuthServiceTest {
     @Mock
     private CodeGenerator codeGenerator;
 
+    @Mock
+    private TokenService tokenService;
+
     private AuthService authService;
 
     @BeforeEach
     void setUp() {
-        authService = new AuthService(userRepository, passwordEncoder, codeGenerator);
+        authService = new AuthService(
+            userRepository,
+            passwordEncoder,
+            codeGenerator,
+            tokenService);
+    }
+
+    @Test
+    void shouldLoginActiveUser() {
+        LoginRequest request = loginRequest();
+        User user = activeUser();
+        when(userRepository.findByEmailIgnoreCaseAndMarkForDeleteFalse("yos@example.com"))
+            .thenReturn(java.util.Optional.of(user));
+        when(passwordEncoder.matches("Password123!", "hashed-password")).thenReturn(true);
+        when(tokenService.issue(any(User.class), org.mockito.ArgumentMatchers.anyLong()))
+            .thenReturn(new IssuedTokens("access-token", 900, "refresh-token", 86400));
+
+        LoginResult result = authService.login(request);
+
+        assertThat(result.response().accessToken()).isEqualTo("access-token");
+        assertThat(result.response().expiresIn()).isEqualTo(900);
+        assertThat(result.refreshToken()).isEqualTo("refresh-token");
+        assertThat(user.getLastLoginDate()).isNotNull();
+    }
+
+    @Test
+    void shouldRejectInvalidCredentials() {
+        LoginRequest request = loginRequest();
+        when(userRepository.findByEmailIgnoreCaseAndMarkForDeleteFalse("yos@example.com"))
+            .thenReturn(java.util.Optional.empty());
+
+        org.assertj.core.api.ThrowableAssert.ThrowingCallable action = () -> authService.login(request);
+
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+            .isInstanceOf(ApiAuthenticationException.class)
+            .hasMessage(ErrorCodes.INVALID_CREDENTIALS);
+    }
+
+    @Test
+    void shouldRejectInactiveUser() {
+        LoginRequest request = loginRequest();
+        User user = activeUser();
+        user.setStatus(ActiveStatus.INACTIVE);
+        when(userRepository.findByEmailIgnoreCaseAndMarkForDeleteFalse("yos@example.com"))
+            .thenReturn(java.util.Optional.of(user));
+        when(passwordEncoder.matches("Password123!", "hashed-password")).thenReturn(true);
+
+        org.assertj.core.api.ThrowableAssert.ThrowingCallable action = () -> authService.login(request);
+
+        assertThat(org.assertj.core.api.Assertions.catchThrowable(action))
+            .isInstanceOf(ApiAuthenticationException.class)
+            .hasMessage(ErrorCodes.USER_INACTIVE);
     }
 
     @Test
@@ -59,5 +119,22 @@ class AuthServiceTest {
         request.setPassword("Password123!");
         request.setConfirmPassword("Password123!");
         return request;
+    }
+
+    private LoginRequest loginRequest() {
+        LoginRequest request = new LoginRequest();
+        request.setEmail("yos@example.com");
+        request.setPassword("Password123!");
+        return request;
+    }
+
+    private User activeUser() {
+        User user = new User();
+        user.setCode("USR000001");
+        user.setName("Yos Merry");
+        user.setEmail("yos@example.com");
+        user.setPasswordHash("hashed-password");
+        user.setStatus(ActiveStatus.ACTIVE);
+        return user;
     }
 }

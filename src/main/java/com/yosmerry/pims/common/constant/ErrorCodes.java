@@ -15,5 +15,7 @@ public final class ErrorCodes {
   public static final String INVALID_FORMAT = "InvalidFormat";
   public static final String WEAK_PASSWORD = "WeakPassword";
   public static final String PASSWORD_MISMATCH = "PasswordMismatch";
+  public static final String INVALID_CREDENTIALS = "InvalidCredentials";
+  public static final String USER_INACTIVE = "UserInactive";
 
 }

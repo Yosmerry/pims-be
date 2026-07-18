@@ -53,6 +53,23 @@ public class GlobalExceptionHandler {
     return badRequest(exception.getErrors(), request);
   }
 
+  @ExceptionHandler(ApiAuthenticationException.class)
+  public ResponseEntity<ApiErrorResponse> handleApiAuthentication(
+      ApiAuthenticationException exception,
+      HttpServletRequest request) {
+    Map<String, List<String>> errors = Map.of(
+        "authentication",
+        List.of(exception.getErrorCode()));
+    ApiErrorResponse response = new ApiErrorResponse(
+        exception.getStatus().value(),
+        errors,
+        new Metadata(resolveRequestId(request)));
+
+    return ResponseEntity
+        .status(exception.getStatus())
+        .body(response);
+  }
+
   private ResponseEntity<ApiErrorResponse> badRequest(
       Map<String, List<String>> errors,
       HttpServletRequest request) {

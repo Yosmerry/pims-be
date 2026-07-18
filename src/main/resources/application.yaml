@@ -1,3 +1,10 @@
 spring:
   application:
     name: pims-be
+
+pims:
+  auth:
+    access-token-expires-in: ${ACCESS_TOKEN_EXPIRES_IN:900}
+    refresh-token-expires-in: ${REFRESH_TOKEN_EXPIRES_IN:86400}
+    jwt-secret: ${JWT_SECRET}
+    cookie-secure: ${COOKIE_SECURE:true}
