@@ -19,62 +19,55 @@ import java.util.UUID;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String REQUEST_ID_HEADER = "X-REQUEST-ID";
+  private static final String REQUEST_ID_HEADER = "X-REQUEST-ID";
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException exception,
-            HttpServletRequest request
-    ) {
-        Map<String, List<String>> errors = new LinkedHashMap<>();
-        exception.getBindingResult().getFieldErrors().forEach(fieldError ->
-                errors.computeIfAbsent(fieldError.getField(), ignored -> new ArrayList<>())
-                        .add(fieldError.getDefaultMessage())
-        );
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException exception,
+      HttpServletRequest request) {
+    Map<String, List<String>> errors = new LinkedHashMap<>();
+    exception.getBindingResult().getFieldErrors()
+        .forEach(fieldError -> errors.computeIfAbsent(fieldError.getField(), ignored -> new ArrayList<>())
+            .add(fieldError.getDefaultMessage()));
 
-        return badRequest(errors, request);
+    return badRequest(errors, request);
+  }
+
+  @ExceptionHandler(MissingRequestHeaderException.class)
+  public ResponseEntity<ApiErrorResponse> handleMissingRequestHeader(
+      MissingRequestHeaderException exception,
+      HttpServletRequest request) {
+    String field = switch (exception.getHeaderName()) {
+      case "X-CHANNEL-ID" -> "channelId";
+      case "X-SERVICE-ID" -> "serviceId";
+      default -> exception.getHeaderName();
+    };
+
+    return badRequest(Map.of(field, List.of("Blank")), request);
+  }
+
+  @ExceptionHandler(ApiValidationException.class)
+  public ResponseEntity<ApiErrorResponse> handleApiValidation(
+      ApiValidationException exception,
+      HttpServletRequest request) {
+    return badRequest(exception.getErrors(), request);
+  }
+
+  private ResponseEntity<ApiErrorResponse> badRequest(
+      Map<String, List<String>> errors,
+      HttpServletRequest request) {
+    ApiErrorResponse response = new ApiErrorResponse(
+        HttpStatus.BAD_REQUEST.value(),
+        errors,
+        new Metadata(resolveRequestId(request)));
+    return ResponseEntity.badRequest().body(response);
+  }
+
+  private String resolveRequestId(HttpServletRequest request) {
+    String requestId = request.getHeader(REQUEST_ID_HEADER);
+    if (requestId == null || requestId.isBlank()) {
+      return UUID.randomUUID().toString();
     }
-
-    @ExceptionHandler(MissingRequestHeaderException.class)
-    public ResponseEntity<ApiErrorResponse> handleMissingRequestHeader(
-            MissingRequestHeaderException exception,
-            HttpServletRequest request
-    ) {
-        String field = switch (exception.getHeaderName()) {
-            case "X-CHANNEL-ID" -> "channelId";
-            case "X-SERVICE-ID" -> "serviceId";
-            default -> exception.getHeaderName();
-        };
-
-        return badRequest(Map.of(field, List.of("Blank")), request);
-    }
-
-    @ExceptionHandler(ApiValidationException.class)
-    public ResponseEntity<ApiErrorResponse> handleApiValidation(
-            ApiValidationException exception,
-            HttpServletRequest request
-    ) {
-        return badRequest(exception.getErrors(), request);
-    }
-
-    private ResponseEntity<ApiErrorResponse> badRequest(
-            Map<String, List<String>> errors,
-            HttpServletRequest request
-    ) {
-        ApiErrorResponse response = new ApiErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "BAD_REQUEST",
-                errors,
-                new Metadata(resolveRequestId(request))
-        );
-        return ResponseEntity.badRequest().body(response);
-    }
-
-    private String resolveRequestId(HttpServletRequest request) {
-        String requestId = request.getHeader(REQUEST_ID_HEADER);
-        if (requestId == null || requestId.isBlank()) {
-            return UUID.randomUUID().toString();
-        }
-        return requestId;
-    }
+    return requestId;
+  }
 }

@@ -33,7 +33,6 @@ Content-Type: application/json
 ```json
 {
   "code": 201,
-  "status": "CREATED",
   "data": {
     "code": "USR000001",
     "name": "Yos Merry",
@@ -55,7 +54,6 @@ Content-Type: application/json
 ```json
 {
   "code": 400,
-  "status": "BAD_REQUEST",
   "errors": {
     "channelId": [
       "Blank"
@@ -126,7 +124,6 @@ Set-Cookie: refresh_token=<refresh-token>; Max-Age=86400; Path=/api/v1/auth; Htt
 ```json
 {
   "code": 200,
-  "status": "OK",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
     "tokenType": "Bearer",
@@ -153,7 +150,6 @@ Set-Cookie: refresh_token=<refresh-token>; Max-Age=86400; Path=/api/v1/auth; Htt
 ```json
 {
   "code": 401,
-  "status": "UNAUTHORIZED",
   "errors": {
     "authentication": [
       "InvalidCredentials"
@@ -174,7 +170,6 @@ The API returns the same error when the email does not exist or the password is 
 ```json
 {
   "code": 403,
-  "status": "FORBIDDEN",
   "errors": {
     "authentication": [
       "UserInactive"
@@ -193,7 +188,6 @@ The API returns the same error when the email does not exist or the password is 
 ```json
 {
   "code": 400,
-  "status": "BAD_REQUEST",
   "errors": {
     "email": [
       "Blank",
@@ -244,7 +238,6 @@ Cookie: refresh_token=<refresh-token>
 ```json
 {
   "code": 200,
-  "status": "OK",
   "data": {
     "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
     "tokenType": "Bearer",
@@ -263,7 +256,6 @@ Cookie: refresh_token=<refresh-token>
 ```json
 {
   "code": 401,
-  "status": "UNAUTHORIZED",
   "errors": {
     "refreshToken": [
       "Missing"
@@ -282,7 +274,6 @@ Cookie: refresh_token=<refresh-token>
 ```json
 {
   "code": 401,
-  "status": "UNAUTHORIZED",
   "errors": {
     "refreshToken": [
       "Invalid"
@@ -325,7 +316,6 @@ Set-Cookie: refresh_token=; Max-Age=0; Path=/api/v1/auth; HttpOnly; Secure; Same
 ```json
 {
   "code": 200,
-  "status": "OK",
   "data": null,
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
@@ -340,7 +330,6 @@ Set-Cookie: refresh_token=; Max-Age=0; Path=/api/v1/auth; HttpOnly; Secure; Same
 ```json
 {
   "code": 401,
-  "status": "UNAUTHORIZED",
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
   }
@@ -369,7 +358,6 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 ```json
 {
   "code": 200,
-  "status": "OK",
   "data": {
     "code": "USR000001",
     "name": "Yos Merry",
@@ -392,7 +380,6 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 ```json
 {
   "code": 401,
-  "status": "UNAUTHORIZED",
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
   }
@@ -406,7 +393,6 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 ```json
 {
   "code": 403,
-  "status": "FORBIDDEN",
   "errors": {
     "authentication": [
       "UserInactive"

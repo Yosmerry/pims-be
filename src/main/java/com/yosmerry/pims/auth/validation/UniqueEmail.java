@@ -10,16 +10,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Documented
-@Target(ElementType.TYPE)
+@Constraint(validatedBy = UniqueEmailValidator.class)
+@Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
-@Constraint(validatedBy = PasswordsMatchValidator.class)
-public @interface PasswordsMatch {
+public @interface UniqueEmail {
 
-  String message();
+    String message();
 
-  Class<?>[] groups() default {};
+    Class<?>[] groups() default {};
 
-  String path();
-
-  Class<? extends Payload>[] payload() default {};
+    Class<? extends Payload>[] payload() default {};
 }

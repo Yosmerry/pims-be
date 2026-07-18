@@ -1,6 +1,8 @@
 package com.yosmerry.pims.user.entity;
 
+import com.yosmerry.pims.common.constant.TableNames;
 import com.yosmerry.pims.common.entity.BaseEntity;
+import com.yosmerry.pims.common.enums.ActiveStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "users")
+@Table(name = TableNames.USERS)
 public class User extends BaseEntity {
 
     @Column(nullable = false, unique = true, length = 20)
@@ -29,7 +31,7 @@ public class User extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private UserStatus status;
+    private ActiveStatus status;
 
     @Column(name = "last_login_date")
     private Long lastLoginDate;

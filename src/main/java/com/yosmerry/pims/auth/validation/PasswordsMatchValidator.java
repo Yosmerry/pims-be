@@ -6,18 +6,45 @@ import jakarta.validation.ConstraintValidatorContext;
 
 import java.util.Objects;
 
-public class PasswordsMatchValidator implements ConstraintValidator<PasswordsMatch, RegisterRequest> {
+public class PasswordsMatchValidator
+    implements ConstraintValidator<PasswordsMatch, RegisterRequest> {
 
-    @Override
-    public boolean isValid(RegisterRequest request, ConstraintValidatorContext context) {
-        if (request == null || Objects.equals(request.getPassword(), request.getConfirmPassword())) {
-            return true;
-        }
+  private String path;
 
-        context.disableDefaultConstraintViolation();
-        context.buildConstraintViolationWithTemplate("PasswordMismatch")
-                .addPropertyNode("confirmPassword")
-                .addConstraintViolation();
-        return false;
+  @Override
+  public void initialize(PasswordsMatch constraintAnnotation) {
+    path = constraintAnnotation.path();
+  }
+
+  @Override
+  public boolean isValid(
+      RegisterRequest request,
+      ConstraintValidatorContext context) {
+    if (request == null) {
+      return true;
     }
+
+    String password = request.getPassword();
+    String confirmPassword = request.getConfirmPassword();
+
+    if (isBlank(password) || isBlank(confirmPassword)) {
+      return true;
+    }
+
+    if (Objects.equals(password, confirmPassword)) {
+      return true;
+    }
+
+    context.disableDefaultConstraintViolation();
+    context.buildConstraintViolationWithTemplate(
+        context.getDefaultConstraintMessageTemplate())
+        .addPropertyNode(path)
+        .addConstraintViolation();
+
+    return false;
+  }
+
+  private boolean isBlank(String value) {
+    return value == null || value.isBlank();
+  }
 }

@@ -5,14 +5,14 @@ import java.util.Map;
 
 public class ApiValidationException extends RuntimeException {
 
-    private final Map<String, List<String>> errors;
+  private final Map<String, List<String>> errors;
 
-    public ApiValidationException(Map<String, List<String>> errors) {
-        super("API validation failed");
-        this.errors = errors;
-    }
+  public ApiValidationException(Map<String, List<String>> errors) {
+    super("API validation failed");
+    this.errors = errors;
+  }
 
-    public Map<String, List<String>> getErrors() {
-        return errors;
-    }
+  public Map<String, List<String>> getErrors() {
+    return errors;
+  }
 }
