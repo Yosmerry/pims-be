@@ -1,8 +1,11 @@
 package com.yosmerry.pims.common.entity;
 
+import com.yosmerry.pims.common.util.TsidGenerator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,7 +18,7 @@ public abstract class BaseEntity {
   @Id
   private Long id;
 
-  @Column(name = "created_date", nullable = false)
+  @Column(name = "created_date", nullable = false, updatable = false)
   private Long createdDate;
 
   @Column(name = "created_by", nullable = false, length = 100)
@@ -29,8 +32,21 @@ public abstract class BaseEntity {
 
   @Version
   @Column(nullable = false)
-  private Long version = 0L;
+  private Long version;
 
   @Column(name = "mark_for_delete", nullable = false)
   private Boolean markForDelete = false;
+
+  @PrePersist
+  protected void onCreate() {
+    long currentTime = System.currentTimeMillis();
+    id = TsidGenerator.next();
+    createdDate = currentTime;
+    updatedDate = currentTime;
+  }
+
+  @PreUpdate
+  protected void onUpdate() {
+    updatedDate = System.currentTimeMillis();
+  }
 }

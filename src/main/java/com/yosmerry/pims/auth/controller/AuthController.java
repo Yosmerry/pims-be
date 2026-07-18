@@ -48,7 +48,7 @@ public class AuthController {
   }
 
   @PostMapping("/login")
-  @Operation(description = "Authenticate user and issue access and refresh tokens")
+  @Operation(description = "Authenticate user and refresh tokens")
   public ResponseEntity<ApiResponse<LoginResponse>> login(
       @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
       @Valid @RequestBody LoginRequest request) {

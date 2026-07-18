@@ -11,7 +11,6 @@ import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiAuthenticationException;
 import com.yosmerry.pims.common.util.CodeGenerator;
-import com.yosmerry.pims.common.util.TsidGenerator;
 import com.yosmerry.pims.user.entity.User;
 import com.yosmerry.pims.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,27 +34,24 @@ public class AuthService {
   public RegisterResponse register(RegisterRequest request) {
     String normalizedEmail = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
-    long currentTime = System.currentTimeMillis();
     User user = new User();
-    user.setId(TsidGenerator.next());
     user.setCode(codeGenerator.next(CodeType.USER));
     user.setName(request.getName().trim());
     user.setEmail(normalizedEmail);
     user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
     user.setStatus(ActiveStatus.ACTIVE);
-    user.setCreatedDate(currentTime);
     user.setCreatedBy(normalizedEmail);
-    user.setUpdatedDate(currentTime);
     user.setUpdatedBy(normalizedEmail);
 
     User savedUser = userRepository.save(user);
-    return new RegisterResponse(
-        savedUser.getCode(),
-        savedUser.getName(),
-        savedUser.getEmail(),
-        savedUser.getStatus().name(),
-        savedUser.getCreatedDate(),
-        savedUser.getUpdatedDate());
+    return RegisterResponse.builder()
+        .code(savedUser.getCode())
+        .name(savedUser.getName())
+        .email(savedUser.getEmail())
+        .status(savedUser.getStatus().name())
+        .createdDate(savedUser.getCreatedDate())
+        .updatedDate(savedUser.getUpdatedDate())
+        .build();
   }
 
   @Transactional
@@ -81,24 +77,28 @@ public class AuthService {
 
     long currentTime = System.currentTimeMillis();
     user.setLastLoginDate(currentTime);
-    user.setUpdatedDate(currentTime);
     user.setUpdatedBy(user.getEmail());
     userRepository.save(user);
 
     IssuedTokens tokens = tokenService.issue(user, currentTime);
-    LoginResponse response = new LoginResponse(
-        tokens.accessToken(),
-        "Bearer",
-        tokens.accessTokenExpiresIn(),
-        new LoginResponse.UserResponse(
-            user.getCode(),
-            user.getName(),
-            user.getEmail(),
-            user.getStatus().name()));
+    LoginResponse.UserResponse userResponse = LoginResponse.UserResponse.builder()
+        .code(user.getCode())
+        .name(user.getName())
+        .email(user.getEmail())
+        .status(user.getStatus().name())
+        .build();
 
-    return new LoginResult(
-        response,
-        tokens.refreshToken(),
-        tokens.refreshTokenExpiresIn());
+    LoginResponse response = LoginResponse.builder()
+        .accessToken(tokens.accessToken())
+        .tokenType("Bearer")
+        .expiresIn(tokens.accessTokenExpiresIn())
+        .user(userResponse)
+        .build();
+
+    return LoginResult.builder()
+        .response(response)
+        .refreshToken(tokens.refreshToken())
+        .refreshTokenExpiresIn(tokens.refreshTokenExpiresIn())
+        .build();
   }
 }
