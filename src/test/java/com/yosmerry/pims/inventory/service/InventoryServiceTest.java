@@ -17,6 +17,7 @@ import com.yosmerry.pims.inventory.entity.InventoryItem;
 import com.yosmerry.pims.inventory.enums.InventoryCondition;
 import com.yosmerry.pims.inventory.enums.InventoryStatus;
 import com.yosmerry.pims.inventory.repository.InventoryItemRepository;
+import com.yosmerry.pims.image.service.ImageService;
 import com.yosmerry.pims.location.entity.Location;
 import com.yosmerry.pims.location.repository.LocationRepository;
 import com.yosmerry.pims.user.entity.User;
@@ -60,6 +61,9 @@ class InventoryServiceTest {
   @Mock
   private CodeGenerator codeGenerator;
 
+  @Mock
+  private ImageService imageService;
+
   private InventoryService inventoryService;
 
   @BeforeEach
@@ -69,7 +73,8 @@ class InventoryServiceTest {
         categoryRepository,
         locationRepository,
         currentUserProvider,
-        codeGenerator);
+        codeGenerator,
+        imageService);
   }
 
   @Test
@@ -208,6 +213,9 @@ class InventoryServiceTest {
     assertThat(inventoryItem.getMarkForDelete()).isTrue();
     assertThat(inventoryItem.getUpdatedBy()).isEqualTo("yos@example.com");
     verify(inventoryItemRepository).save(inventoryItem);
+    verify(imageService).deleteAllForInventoryItem(
+        "ITM000001",
+        "yos@example.com");
   }
 
   @Test

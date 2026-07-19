@@ -17,6 +17,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -65,5 +66,16 @@ public class ImageController {
         .contentLength(imageContent.fileSize())
         .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition.toString())
         .body(imageContent.resource());
+  }
+
+  @DeleteMapping(BasePathNames.IMAGES + "/{imageCode}")
+  @Operation(description = "Delete an inventory item image")
+  public ResponseEntity<ApiResponse<Void>> delete(
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
+      @PathVariable String imageCode) {
+    RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
+    imageService.delete(imageCode);
+
+    return ResponseUtils.ok(null, requestHeaders.requestId());
   }
 }

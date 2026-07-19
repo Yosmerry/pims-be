@@ -16,10 +16,13 @@ import com.yosmerry.pims.image.repository.ItemImageRepository;
 import com.yosmerry.pims.inventory.repository.InventoryItemRepository;
 import com.yosmerry.pims.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -28,12 +31,14 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ImageService {
 
   private static final String IMAGE_FIELD = "image";
@@ -117,6 +122,60 @@ public class ImageService {
     } catch (MalformedURLException exception) {
       throw new ApiFileStorageException(exception);
     }
+  }
+
+  @Transactional
+  public void delete(String imageCode) {
+    User user = currentUserProvider.requireActiveUser();
+    ItemImage itemImage = itemImageRepository
+        .findByCodeAndMarkForDeleteFalse(imageCode)
+        .orElseThrow(() -> new ApiResourceNotFoundException(IMAGE_FIELD));
+
+    if (!isOwnedInventoryItem(itemImage.getInventoryItemCode(), user.getCode())) {
+      throw new ApiResourceNotFoundException(IMAGE_FIELD);
+    }
+
+    List<ItemImage> imagesToSave = new ArrayList<>();
+    itemImage.setMarkForDelete(true);
+    itemImage.setUpdatedBy(user.getEmail());
+    imagesToSave.add(itemImage);
+
+    if (Boolean.TRUE.equals(itemImage.getPrimary())) {
+      itemImageRepository
+          .findFirstByInventoryItemCodeAndCodeNotAndMarkForDeleteFalseOrderByCreatedDateAsc(
+              itemImage.getInventoryItemCode(),
+              itemImage.getCode())
+          .ifPresent(nextPrimary -> {
+            nextPrimary.setPrimary(true);
+            nextPrimary.setUpdatedBy(user.getEmail());
+            imagesToSave.add(nextPrimary);
+          });
+    }
+
+    itemImageRepository.saveAll(imagesToSave);
+    deleteFilesAfterCommit(List.of(
+        resolveStoragePath(Path.of(itemImage.getStoragePath()))));
+  }
+
+  @Transactional
+  public void deleteAllForInventoryItem(
+      String inventoryItemCode,
+      String updatedBy) {
+    List<ItemImage> itemImages = itemImageRepository
+        .findAllByInventoryItemCodeAndMarkForDeleteFalse(inventoryItemCode);
+    if (itemImages.isEmpty()) {
+      return;
+    }
+
+    List<Path> filePaths = new ArrayList<>();
+    for (ItemImage itemImage : itemImages) {
+      itemImage.setMarkForDelete(true);
+      itemImage.setUpdatedBy(updatedBy);
+      filePaths.add(resolveStoragePath(Path.of(itemImage.getStoragePath())));
+    }
+
+    itemImageRepository.saveAll(itemImages);
+    deleteFilesAfterCommit(filePaths);
   }
 
   private void validateFile(MultipartFile file) {
@@ -239,11 +298,25 @@ public class ImageService {
     return new ApiValidationException(Map.of(FILE_FIELD, List.of(errorCode)));
   }
 
+  private void deleteFilesAfterCommit(List<Path> filePaths) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              filePaths.forEach(ImageService.this::deleteQuietly);
+            }
+          });
+      return;
+    }
+    filePaths.forEach(this::deleteQuietly);
+  }
+
   private void deleteQuietly(Path filePath) {
     try {
       Files.deleteIfExists(filePath);
-    } catch (IOException ignored) {
-      // Preserve the original database exception.
+    } catch (IOException exception) {
+      log.warn("Failed to delete stored image file: {}", filePath, exception);
     }
   }
 

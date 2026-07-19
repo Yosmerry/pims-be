@@ -195,6 +195,61 @@ class ImageServiceTest {
     assertThat(response.resource().exists()).isTrue();
   }
 
+  @Test
+  void shouldDeletePrimaryImageAndPromoteNextImage() throws IOException {
+    Path imagePath = temporaryDirectory.resolve("ITM000001/stored.png");
+    Files.createDirectories(imagePath.getParent());
+    Files.write(imagePath, pngBytes());
+    ItemImage itemImage = itemImage();
+    ItemImage nextImage = secondaryItemImage();
+
+    when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
+    when(itemImageRepository.findByCodeAndMarkForDeleteFalse("IMG000001"))
+        .thenReturn(Optional.of(itemImage));
+    when(inventoryItemRepository.findByCodeAndUserCodeAndMarkForDeleteFalse(
+        "ITM000001",
+        "USR000001"))
+        .thenReturn(Optional.of(inventoryItem()));
+    when(itemImageRepository
+        .findFirstByInventoryItemCodeAndCodeNotAndMarkForDeleteFalseOrderByCreatedDateAsc(
+            "ITM000001",
+            "IMG000001"))
+        .thenReturn(Optional.of(nextImage));
+
+    imageService.delete("IMG000001");
+
+    assertThat(itemImage.getMarkForDelete()).isTrue();
+    assertThat(nextImage.getPrimary()).isTrue();
+    assertThat(nextImage.getUpdatedBy()).isEqualTo("yos@example.com");
+    assertThat(imagePath).doesNotExist();
+    verify(itemImageRepository).saveAll(List.of(itemImage, nextImage));
+  }
+
+  @Test
+  void shouldDeleteAllImagesForDeletedInventoryItem() throws IOException {
+    Path firstPath = temporaryDirectory.resolve("ITM000001/stored.png");
+    Path secondPath = temporaryDirectory.resolve("ITM000001/stored-2.png");
+    Files.createDirectories(firstPath.getParent());
+    Files.write(firstPath, pngBytes());
+    Files.write(secondPath, pngBytes());
+    ItemImage firstImage = itemImage();
+    ItemImage secondImage = secondaryItemImage();
+
+    when(itemImageRepository
+        .findAllByInventoryItemCodeAndMarkForDeleteFalse("ITM000001"))
+        .thenReturn(List.of(firstImage, secondImage));
+
+    imageService.deleteAllForInventoryItem("ITM000001", "yos@example.com");
+
+    assertThat(firstImage.getMarkForDelete()).isTrue();
+    assertThat(secondImage.getMarkForDelete()).isTrue();
+    assertThat(firstImage.getUpdatedBy()).isEqualTo("yos@example.com");
+    assertThat(secondImage.getUpdatedBy()).isEqualTo("yos@example.com");
+    assertThat(firstPath).doesNotExist();
+    assertThat(secondPath).doesNotExist();
+    verify(itemImageRepository).saveAll(List.of(firstImage, secondImage));
+  }
+
   private MockMultipartFile pngFile() {
     return new MockMultipartFile(
         "file",
@@ -236,6 +291,19 @@ class ImageServiceTest {
     itemImage.setFileSize((long) pngBytes().length);
     itemImage.setStoragePath("ITM000001/stored.png");
     itemImage.setPrimary(true);
+    return itemImage;
+  }
+
+  private ItemImage secondaryItemImage() {
+    ItemImage itemImage = new ItemImage();
+    itemImage.setCode("IMG000002");
+    itemImage.setInventoryItemCode("ITM000001");
+    itemImage.setOriginalFilename("laptop-2.png");
+    itemImage.setStoredFilename("stored-2.png");
+    itemImage.setContentType("image/png");
+    itemImage.setFileSize((long) pngBytes().length);
+    itemImage.setStoragePath("ITM000001/stored-2.png");
+    itemImage.setPrimary(false);
     return itemImage;
   }
 }

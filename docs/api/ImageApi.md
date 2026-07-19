@@ -226,6 +226,76 @@ the response as a blob and create an object URL for display.
 }
 ```
 
+## Delete Image
+
+- Endpoint: `/api/v1/images/{imageCode}`
+- Method: `DELETE`
+- Behavior: soft-delete the image record and remove the stored file after the
+  database transaction commits
+- Primary behavior: when the deleted image is primary, the oldest remaining
+  image becomes primary
+
+### Response Success
+
+- HTTP status: `200 OK`
+
+```json
+{
+  "code": 200,
+  "data": null,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+### Response Error
+
+#### Image Not Found
+
+- HTTP status: `404 Not Found`
+
+```json
+{
+  "code": 404,
+  "errors": {
+    "image": ["NotFound"]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": ["UserInactive"]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
 ## Storage Configuration
 
 ```yaml
