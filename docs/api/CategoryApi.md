@@ -1,8 +1,5 @@
 # Category API
 
-All Category APIs require a valid Bearer access token. Categories are scoped to
-the authenticated user, so a user cannot access another user's categories.
-
 ## Common Request Headers
 
 ```http
@@ -47,6 +44,61 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 }
 ```
 
+### Response Error
+
+#### Validation Error
+
+- HTTP status: `400 Bad Request`
+
+```json
+{
+  "code": 400,
+  "errors": {
+    "name": [
+      "Blank",
+      "CharacterMoreThan100"
+    ],
+    "description": [
+      "CharacterMoreThan500"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": [
+      "UserInactive"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
 ## Get Categories
 
 - Endpoint: `/api/v1/categories`
@@ -70,6 +122,39 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
       "updatedDate": 1784250000000
     }
   ],
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+### Response Error
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": [
+      "UserInactive"
+    ]
+  },
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
   }
@@ -102,6 +187,57 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 }
 ```
 
+### Response Error
+
+#### Category Not Found
+
+- HTTP status: `404 Not Found`
+
+```json
+{
+  "code": 404,
+  "errors": {
+    "category": [
+      "NotFound"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": [
+      "UserInactive"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
 ## Update Category
 
 - Endpoint: `/api/v1/categories/{code}`
@@ -117,8 +253,6 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 }
 ```
 
-Allowed status values: `ACTIVE`, `INACTIVE`.
-
 ### Response Success
 
 - HTTP status: `200 OK`
@@ -133,6 +267,83 @@ Allowed status values: `ACTIVE`, `INACTIVE`.
     "status": "ACTIVE",
     "createdDate": 1784250000000,
     "updatedDate": 1784260000000
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+### Response Error
+
+#### Validation Error
+
+- HTTP status: `400 Bad Request`
+
+```json
+{
+  "code": 400,
+  "errors": {
+    "name": [
+      "Blank",
+      "CharacterMoreThan100"
+    ],
+    "description": [
+      "CharacterMoreThan500"
+    ],
+    "status": [
+      "Blank",
+      "Invalid"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Category Not Found
+
+- HTTP status: `404 Not Found`
+
+```json
+{
+  "code": 404,
+  "errors": {
+    "category": [
+      "NotFound"
+    ]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": [
+      "UserInactive"
+    ]
   },
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
@@ -160,35 +371,9 @@ Allowed status values: `ACTIVE`, `INACTIVE`.
 }
 ```
 
-## Validation Error
+### Response Error
 
-- HTTP status: `400 Bad Request`
-
-```json
-{
-  "code": 400,
-  "errors": {
-    "name": [
-      "Blank",
-      "CharacterMoreThan100"
-    ],
-    "description": [
-      "CharacterMoreThan500"
-    ],
-    "status": [
-      "Blank",
-      "Invalid"
-    ]
-  },
-  "metadata": {
-    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
-  }
-}
-```
-
-The `status` validation only applies to the update request.
-
-## Category Not Found
+#### Category Not Found
 
 - HTTP status: `404 Not Found`
 
@@ -206,9 +391,7 @@ The `status` validation only applies to the update request.
 }
 ```
 
-The API also returns this response when the category belongs to another user.
-
-## Unauthorized
+#### Unauthorized
 
 - HTTP status: `401 Unauthorized`
 
@@ -221,7 +404,7 @@ The API also returns this response when the category belongs to another user.
 }
 ```
 
-## Inactive User
+#### Inactive User
 
 - HTTP status: `403 Forbidden`
 
