@@ -33,3 +33,6 @@ build/
 .vscode/
 .env.local
 !.env.example
+
+### Runtime uploads ###
+/uploads/
