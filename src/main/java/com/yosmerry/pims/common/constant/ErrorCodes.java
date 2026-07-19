@@ -12,6 +12,8 @@ public final class ErrorCodes {
   public static final String CHARACTER_LESS_THAN_8 = "CharacterLessThan8";
   public static final String CHARACTER_MORE_THAN_72 = "CharacterMoreThan72";
   public static final String CHARACTER_MORE_THAN_255 = "CharacterMoreThan255";
+  public static final String CHARACTER_MORE_THAN_100 = "CharacterMoreThan100";
+  public static final String CHARACTER_MORE_THAN_500 = "CharacterMoreThan500";
   public static final String INVALID_FORMAT = "InvalidFormat";
   public static final String WEAK_PASSWORD = "WeakPassword";
   public static final String PASSWORD_MISMATCH = "PasswordMismatch";
@@ -19,5 +21,6 @@ public final class ErrorCodes {
   public static final String USER_INACTIVE = "UserInactive";
   public static final String MISSING = "Missing";
   public static final String INVALID = "Invalid";
+  public static final String NOT_FOUND = "NotFound";
 
 }
