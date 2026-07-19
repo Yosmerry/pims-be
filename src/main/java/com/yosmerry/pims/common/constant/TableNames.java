@@ -9,4 +9,5 @@ public final class TableNames {
   public static final String REFRESH_TOKENS = "refresh_tokens";
   public static final String CATEGORIES = "categories";
   public static final String LOCATIONS = "locations";
+  public static final String INVENTORY_ITEMS = "inventory_items";
 }
