@@ -17,6 +17,6 @@ public class PagingRequest {
 
   @NotNull(message = ErrorCodes.BLANK)
   @Min(value = 1, message = ErrorCodes.MINIMUM_1)
-  @Max(value = 100, message = ErrorCodes.MAXIMUM_100)
-  private Integer size = 20;
+  @Max(value = 50, message = ErrorCodes.MAXIMUM_50)
+  private Integer size = 10;
 }
