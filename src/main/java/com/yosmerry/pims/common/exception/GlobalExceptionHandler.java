@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -125,6 +127,32 @@ public class GlobalExceptionHandler {
         exception.getField(),
         List.of(exception.getErrorCode()));
     return errorResponse(HttpStatus.NOT_FOUND, errors, request);
+  }
+
+  @ExceptionHandler(MissingServletRequestPartException.class)
+  public ResponseEntity<ApiErrorResponse> handleMissingRequestPart(
+      MissingServletRequestPartException exception,
+      HttpServletRequest request) {
+    return badRequest(
+        Map.of(exception.getRequestPartName(), List.of(ErrorCodes.BLANK)),
+        request);
+  }
+
+  @ExceptionHandler(MaxUploadSizeExceededException.class)
+  public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(
+      HttpServletRequest request) {
+    return badRequest(
+        Map.of("file", List.of(ErrorCodes.FILE_TOO_LARGE)),
+        request);
+  }
+
+  @ExceptionHandler(ApiFileStorageException.class)
+  public ResponseEntity<ApiErrorResponse> handleImageStorage(
+      HttpServletRequest request) {
+    return errorResponse(
+        HttpStatus.INTERNAL_SERVER_ERROR,
+        Map.of("file", List.of(ErrorCodes.STORAGE_FAILED)),
+        request);
   }
 
   private ResponseEntity<ApiErrorResponse> badRequest(

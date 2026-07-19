@@ -10,6 +10,7 @@ import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
 import com.yosmerry.pims.common.exception.ApiValidationException;
 import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
+import com.yosmerry.pims.image.service.ImageService;
 import com.yosmerry.pims.inventory.dto.CreateInventoryItemRequest;
 import com.yosmerry.pims.inventory.dto.InventoryItemFilter;
 import com.yosmerry.pims.inventory.dto.InventoryItemResponse;
@@ -45,6 +46,7 @@ public class InventoryService {
   private final LocationRepository locationRepository;
   private final CurrentUserProvider currentUserProvider;
   private final CodeGenerator codeGenerator;
+  private final ImageService imageService;
 
   @Transactional
   public InventoryItemResponse create(CreateInventoryItemRequest request) {
@@ -120,6 +122,7 @@ public class InventoryService {
     inventoryItem.setMarkForDelete(true);
     inventoryItem.setUpdatedBy(user.getEmail());
     inventoryItemRepository.save(inventoryItem);
+    imageService.deleteAllForInventoryItem(code, user.getEmail());
   }
 
   private void applyCreateRequest(

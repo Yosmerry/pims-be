@@ -306,6 +306,8 @@ response.
 
 - Endpoint: `/api/v1/inventory-items/{code}`
 - Method: `PUT`
+- Image behavior: existing images stay linked because the inventory item code
+  does not change; image upload and deletion use the Image API
 
 ### Request Body
 
@@ -390,7 +392,8 @@ The validation fields are the same as create, with the additional required
 
 - Endpoint: `/api/v1/inventory-items/{code}`
 - Method: `DELETE`
-- Behavior: soft delete
+- Behavior: soft-delete the inventory item and all related image records;
+  stored image files are removed after the database transaction commits
 
 ### Response Success
 

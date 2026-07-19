@@ -10,4 +10,5 @@ public final class TableNames {
   public static final String CATEGORIES = "categories";
   public static final String LOCATIONS = "locations";
   public static final String INVENTORY_ITEMS = "inventory_items";
+  public static final String ITEM_IMAGES = "item_images";
 }
