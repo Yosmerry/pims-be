@@ -9,6 +9,8 @@ import com.yosmerry.pims.location.repository.LocationRepository;
 import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
+import com.yosmerry.pims.common.request.PagingRequest;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,17 +82,33 @@ class LocationServiceTest {
   @Test
   void shouldGetCurrentUserLocations() {
     User user = currentUser();
+    PagingRequest pagingRequest = new PagingRequest();
+    pagingRequest.setPage(0);
+    pagingRequest.setSize(10);
     when(currentUserProvider.requireActiveUser()).thenReturn(user);
     when(locationRepository
-        .findAllByUserCodeAndMarkForDeleteFalseOrderByNameAsc("USR000001"))
-        .thenReturn(List.of(location()));
+        .findAllByUserCodeAndMarkForDeleteFalse(
+            eq("USR000001"),
+            any(Pageable.class)))
+        .thenReturn(new PageImpl<>(
+            List.of(location()),
+            PageRequest.of(0, 10),
+            1));
 
-    List<LocationResponse> response = locationService.findAll();
+    PageResponse<LocationResponse> response = locationService.findAll(pagingRequest);
 
-    assertThat(response).hasSize(1);
-    assertThat(response.getFirst().code()).isEqualTo("LOC000001");
-    verify(locationRepository)
-        .findAllByUserCodeAndMarkForDeleteFalseOrderByNameAsc("USR000001");
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().getFirst().code()).isEqualTo("LOC000001");
+    assertThat(response.first()).isTrue();
+    assertThat(response.last()).isTrue();
+
+    ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+    verify(locationRepository).findAllByUserCodeAndMarkForDeleteFalse(
+        eq("USR000001"),
+        pageableCaptor.capture());
+    assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+    assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").isAscending())
+        .isTrue();
   }
 
   @Test

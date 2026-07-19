@@ -134,19 +134,21 @@ current user.
 
 ### Query Parameters
 
-| Parameter | Required | Description |
-| --- | --- | --- |
-| `search` | No | Case-insensitive search in name, description, and notes |
-| `categoryCode` | No | Filter by category code |
-| `locationCode` | No | Filter by location code |
-| `condition` | No | Filter by an allowed condition |
-| `status` | No | Filter by an allowed status |
-| `sortBy` | No | Sort using one of the allowed sort values |
+| Parameter | Required | Default | Description |
+| --- | --- | --- | --- |
+| `page` | No | `0` | Zero-based page number |
+| `size` | No | `20` | Items per page, from 1 to 100 |
+| `search` | No | - | Case-insensitive search in name, description, and notes |
+| `categoryCode` | No | - | Filter by category code |
+| `locationCode` | No | - | Filter by location code |
+| `condition` | No | - | Filter by an allowed condition |
+| `status` | No | - | Filter by an allowed status |
+| `sortBy` | No | `updatedDate:desc` | Sort using an allowed sort value |
 
 Example:
 
 ```http
-GET /api/v1/inventory-items?search=macbook&condition=GOOD&sortBy=name:asc
+GET /api/v1/inventory-items?page=0&size=20&search=macbook&condition=GOOD&sortBy=name:asc
 ```
 
 ### Response Success
@@ -156,23 +158,31 @@ GET /api/v1/inventory-items?search=macbook&condition=GOOD&sortBy=name:asc
 ```json
 {
   "code": 200,
-  "data": [
-    {
-      "code": "ITM000001",
-      "categoryCode": "CAT000001",
-      "locationCode": "LOC000001",
-      "name": "MacBook Pro",
-      "description": "Work laptop",
-      "quantity": 1,
-      "purchasePrice": 25000000.00,
-      "purchaseDate": "2026-07-01",
-      "condition": "GOOD",
-      "status": "OWNED",
-      "notes": "Includes charger",
-      "createdDate": 1784422800000,
-      "updatedDate": 1784509200000
-    }
-  ],
+  "data": {
+    "content": [
+      {
+        "code": "ITM000001",
+        "categoryCode": "CAT000001",
+        "locationCode": "LOC000001",
+        "name": "MacBook Pro",
+        "description": "Work laptop",
+        "quantity": 1,
+        "purchasePrice": 25000000.00,
+        "purchaseDate": "2026-07-01",
+        "condition": "GOOD",
+        "status": "OWNED",
+        "notes": "Includes charger",
+        "createdDate": 1784422800000,
+        "updatedDate": 1784509200000
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1,
+    "first": true,
+    "last": true
+  },
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
   }
@@ -189,6 +199,8 @@ GET /api/v1/inventory-items?search=macbook&condition=GOOD&sortBy=name:asc
 {
   "code": 400,
   "errors": {
+    "page": ["Blank", "Minimum0"],
+    "size": ["Blank", "Minimum1", "Maximum100"],
     "search": ["CharacterMoreThan150"],
     "categoryCode": ["CharacterMoreThan20"],
     "locationCode": ["CharacterMoreThan20"],

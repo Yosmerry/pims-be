@@ -8,6 +8,7 @@ import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
 import com.yosmerry.pims.common.exception.ApiValidationException;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.inventory.dto.CreateInventoryItemRequest;
 import com.yosmerry.pims.inventory.dto.InventoryItemFilter;
@@ -22,6 +23,8 @@ import com.yosmerry.pims.location.entity.Location;
 import com.yosmerry.pims.location.repository.LocationRepository;
 import com.yosmerry.pims.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,15 +69,14 @@ public class InventoryService {
   }
 
   @Transactional(readOnly = true)
-  public List<InventoryItemResponse> findAll(InventoryItemFilter filter) {
+  public PageResponse<InventoryItemResponse> findAll(InventoryItemFilter filter) {
     User user = currentUserProvider.requireActiveUser();
     Sort sort = resolveSort(filter.getSortBy());
+    Pageable pageable = PageRequest.of(filter.getPage(), filter.getSize(), sort);
 
-    return inventoryItemRepository
-        .findAll(InventoryItemSpecifications.from(user.getCode(), filter), sort)
-        .stream()
-        .map(this::toResponse)
-        .toList();
+    return PageResponse.from(inventoryItemRepository
+        .findAll(InventoryItemSpecifications.from(user.getCode(), filter), pageable)
+        .map(this::toResponse));
   }
 
   @Transactional(readOnly = true)
