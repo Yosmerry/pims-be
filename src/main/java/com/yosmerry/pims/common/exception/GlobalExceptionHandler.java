@@ -117,6 +117,16 @@ public class GlobalExceptionHandler {
     return errorResponse(exception.getStatus(), errors, request);
   }
 
+  @ExceptionHandler(ApiResourceNotFoundException.class)
+  public ResponseEntity<ApiErrorResponse> handleResourceNotFound(
+      ApiResourceNotFoundException exception,
+      HttpServletRequest request) {
+    Map<String, List<String>> errors = Map.of(
+        exception.getField(),
+        List.of(exception.getErrorCode()));
+    return errorResponse(HttpStatus.NOT_FOUND, errors, request);
+  }
+
   private ResponseEntity<ApiErrorResponse> badRequest(
       Map<String, List<String>> errors,
       HttpServletRequest request) {
