@@ -3,6 +3,7 @@ package com.yosmerry.pims.inventory.controller;
 import com.yosmerry.pims.common.constant.BasePathNames;
 import com.yosmerry.pims.common.request.RequestHeaders;
 import com.yosmerry.pims.common.response.ApiResponse;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.response.ResponseUtils;
 import com.yosmerry.pims.inventory.dto.CreateInventoryItemRequest;
 import com.yosmerry.pims.inventory.dto.InventoryItemFilter;
@@ -28,8 +29,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping(BasePathNames.INVENTORY_ITEMS)
@@ -52,11 +51,11 @@ public class InventoryController {
 
   @GetMapping
   @Operation(description = "Search and filter inventory items owned by the current user")
-  public ResponseEntity<ApiResponse<List<InventoryItemResponse>>> findAll(
+  public ResponseEntity<ApiResponse<PageResponse<InventoryItemResponse>>> findAll(
       @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
       @Valid @ModelAttribute InventoryItemFilter filter) {
     RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
-    List<InventoryItemResponse> response = inventoryService.findAll(filter);
+    PageResponse<InventoryItemResponse> response = inventoryService.findAll(filter);
 
     return ResponseUtils.ok(response, requestHeaders.requestId());
   }

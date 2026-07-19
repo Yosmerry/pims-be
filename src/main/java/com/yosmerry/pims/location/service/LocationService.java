@@ -9,13 +9,16 @@ import com.yosmerry.pims.location.repository.LocationRepository;
 import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
+import com.yosmerry.pims.common.request.PagingRequest;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.user.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -44,14 +47,16 @@ public class LocationService {
   }
 
   @Transactional(readOnly = true)
-  public List<LocationResponse> findAll() {
+  public PageResponse<LocationResponse> findAll(PagingRequest pagingRequest) {
     User user = currentUserProvider.requireActiveUser();
+    Pageable pageable = PageRequest.of(
+        pagingRequest.getPage(),
+        pagingRequest.getSize(),
+        Sort.by("name").ascending());
 
-    return locationRepository
-        .findAllByUserCodeAndMarkForDeleteFalseOrderByNameAsc(user.getCode())
-        .stream()
-        .map(this::toResponse)
-        .toList();
+    return PageResponse.from(locationRepository
+        .findAllByUserCodeAndMarkForDeleteFalse(user.getCode(), pageable)
+        .map(this::toResponse));
   }
 
   @Transactional(readOnly = true)

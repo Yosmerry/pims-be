@@ -105,6 +105,15 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 - Method: `GET`
 - Result order: location name ascending
 
+### Query Parameters
+
+| Parameter | Required | Default | Description |
+| --- | --- | --- | --- |
+| `page` | No | `0` | Zero-based page number |
+| `size` | No | `20` | Items per page, from 1 to 100 |
+
+Example: `GET /api/v1/locations?page=0&size=20`
+
 ### Response Success
 
 - HTTP status: `200 OK`
@@ -112,16 +121,24 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 ```json
 {
   "code": 200,
-  "data": [
-    {
-      "code": "LOC000001",
-      "name": "Garage",
-      "description": "Tools and items stored in the garage",
-      "status": "ACTIVE",
-      "createdDate": 1784250000000,
-      "updatedDate": 1784250000000
-    }
-  ],
+  "data": {
+    "content": [
+      {
+        "code": "LOC000001",
+        "name": "Garage",
+        "description": "Tools and items stored in the garage",
+        "status": "ACTIVE",
+        "createdDate": 1784250000000,
+        "updatedDate": 1784250000000
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1,
+    "first": true,
+    "last": true
+  },
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
   }
@@ -129,6 +146,23 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 ```
 
 ### Response Error
+
+#### Validation Error
+
+- HTTP status: `400 Bad Request`
+
+```json
+{
+  "code": 400,
+  "errors": {
+    "page": ["Blank", "Minimum0"],
+    "size": ["Blank", "Minimum1", "Maximum100"]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
 
 #### Unauthorized
 

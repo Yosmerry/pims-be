@@ -7,6 +7,7 @@ import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
 import com.yosmerry.pims.common.exception.ApiValidationException;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.inventory.dto.CreateInventoryItemRequest;
 import com.yosmerry.pims.inventory.dto.InventoryItemFilter;
@@ -25,7 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
@@ -139,22 +142,32 @@ class InventoryServiceTest {
     InventoryItemFilter filter = new InventoryItemFilter();
     filter.setSearch("macbook");
     filter.setSortBy("name:asc");
+    filter.setPage(2);
+    filter.setSize(10);
     when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
     when(inventoryItemRepository.findAll(
         any(Specification.class),
-        any(Sort.class)))
-        .thenReturn(List.of(inventoryItem()));
+        any(Pageable.class)))
+        .thenReturn(new PageImpl<>(
+            List.of(inventoryItem()),
+            PageRequest.of(2, 10),
+            25));
 
-    List<InventoryItemResponse> response = inventoryService.findAll(filter);
+    PageResponse<InventoryItemResponse> response = inventoryService.findAll(filter);
 
-    assertThat(response).hasSize(1);
-    assertThat(response.getFirst().code()).isEqualTo("ITM000001");
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().getFirst().code()).isEqualTo("ITM000001");
+    assertThat(response.page()).isEqualTo(2);
+    assertThat(response.totalPages()).isEqualTo(3);
 
-    ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+    ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
     verify(inventoryItemRepository).findAll(
         any(Specification.class),
-        sortCaptor.capture());
-    assertThat(sortCaptor.getValue().getOrderFor("name").isAscending()).isTrue();
+        pageableCaptor.capture());
+    assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(2);
+    assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(10);
+    assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").isAscending())
+        .isTrue();
   }
 
   @Test

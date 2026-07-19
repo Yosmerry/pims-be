@@ -9,6 +9,8 @@ import com.yosmerry.pims.category.repository.CategoryRepository;
 import com.yosmerry.pims.common.enums.ActiveStatus;
 import com.yosmerry.pims.common.enums.CodeType;
 import com.yosmerry.pims.common.exception.ApiResourceNotFoundException;
+import com.yosmerry.pims.common.request.PagingRequest;
+import com.yosmerry.pims.common.response.PageResponse;
 import com.yosmerry.pims.common.util.CodeGenerator;
 import com.yosmerry.pims.user.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +19,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,17 +82,33 @@ class CategoryServiceTest {
   @Test
   void shouldGetCurrentUserCategories() {
     User user = currentUser();
+    PagingRequest pagingRequest = new PagingRequest();
+    pagingRequest.setPage(1);
+    pagingRequest.setSize(5);
     when(currentUserProvider.requireActiveUser()).thenReturn(user);
     when(categoryRepository
-        .findAllByUserCodeAndMarkForDeleteFalseOrderByNameAsc("USR000001"))
-        .thenReturn(List.of(category()));
+        .findAllByUserCodeAndMarkForDeleteFalse(
+            eq("USR000001"),
+            any(Pageable.class)))
+        .thenReturn(new PageImpl<>(
+            List.of(category()),
+            PageRequest.of(1, 5),
+            8));
 
-    List<CategoryResponse> response = categoryService.findAll();
+    PageResponse<CategoryResponse> response = categoryService.findAll(pagingRequest);
 
-    assertThat(response).hasSize(1);
-    assertThat(response.getFirst().code()).isEqualTo("CAT000001");
-    verify(categoryRepository)
-        .findAllByUserCodeAndMarkForDeleteFalseOrderByNameAsc("USR000001");
+    assertThat(response.content()).hasSize(1);
+    assertThat(response.content().getFirst().code()).isEqualTo("CAT000001");
+    assertThat(response.page()).isEqualTo(1);
+    assertThat(response.totalElements()).isEqualTo(8);
+
+    ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+    verify(categoryRepository).findAllByUserCodeAndMarkForDeleteFalse(
+        eq("USR000001"),
+        pageableCaptor.capture());
+    assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(5);
+    assertThat(pageableCaptor.getValue().getSort().getOrderFor("name").isAscending())
+        .isTrue();
   }
 
   @Test
