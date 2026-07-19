@@ -8,5 +8,6 @@ public final class BasePathNames {
 
   public static final String AUTH = "/api/v1/auth";
   public static final String CATEGORIES = "/api/v1/categories";
+  public static final String LOCATIONS = "/api/v1/locations";
 
 }

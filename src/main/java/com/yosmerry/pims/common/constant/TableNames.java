@@ -8,4 +8,5 @@ public final class TableNames {
   public static final String USERS = "users";
   public static final String REFRESH_TOKENS = "refresh_tokens";
   public static final String CATEGORIES = "categories";
+  public static final String LOCATIONS = "locations";
 }
