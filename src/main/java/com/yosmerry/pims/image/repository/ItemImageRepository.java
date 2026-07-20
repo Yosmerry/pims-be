@@ -13,6 +13,10 @@ public interface ItemImageRepository extends JpaRepository<ItemImage, Long> {
 
   Optional<ItemImage> findByCodeAndMarkForDeleteFalse(String code);
 
+  List<ItemImage>
+      findAllByInventoryItemCodeAndMarkForDeleteFalseOrderByPrimaryDescCreatedDateAsc(
+      String inventoryItemCode);
+
   List<ItemImage> findAllByInventoryItemCodeAndMarkForDeleteFalse(
       String inventoryItemCode);
 

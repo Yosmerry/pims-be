@@ -96,6 +96,19 @@ public class ImageService {
   }
 
   @Transactional(readOnly = true)
+  public List<ImageResponse> findAll(String inventoryItemCode) {
+    User user = currentUserProvider.requireActiveUser();
+    requireOwnedInventoryItem(inventoryItemCode, user.getCode());
+
+    return itemImageRepository
+        .findAllByInventoryItemCodeAndMarkForDeleteFalseOrderByPrimaryDescCreatedDateAsc(
+            inventoryItemCode)
+        .stream()
+        .map(this::toResponse)
+        .toList();
+  }
+
+  @Transactional(readOnly = true)
   public ImageContent findContent(String imageCode) {
     User user = currentUserProvider.requireActiveUser();
     ItemImage itemImage = itemImageRepository

@@ -174,6 +174,31 @@ class ImageServiceTest {
   }
 
   @Test
+  void shouldGetImagesForOwnedInventoryItem() {
+    ItemImage primaryImage = itemImage();
+    ItemImage secondaryImage = secondaryItemImage();
+
+    when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
+    when(inventoryItemRepository.findByCodeAndUserCodeAndMarkForDeleteFalse(
+        "ITM000001",
+        "USR000001"))
+        .thenReturn(Optional.of(inventoryItem()));
+    when(itemImageRepository
+        .findAllByInventoryItemCodeAndMarkForDeleteFalseOrderByPrimaryDescCreatedDateAsc(
+            "ITM000001"))
+        .thenReturn(List.of(primaryImage, secondaryImage));
+
+    List<ImageResponse> response = imageService.findAll("ITM000001");
+
+    assertThat(response)
+        .extracting(ImageResponse::code)
+        .containsExactly("IMG000001", "IMG000002");
+    assertThat(response.getFirst().primary()).isTrue();
+    assertThat(response.getFirst().url())
+        .isEqualTo("/api/v1/images/IMG000001");
+  }
+
+  @Test
   void shouldGetImageContentForOwnedInventoryItem() throws IOException {
     Path imagePath = temporaryDirectory.resolve("ITM000001/stored.png");
     Files.createDirectories(imagePath.getParent());
