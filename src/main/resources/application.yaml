@@ -3,8 +3,8 @@ spring:
     name: pims-be
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 6MB
+      max-file-size: 100000B
+      max-request-size: 150KB
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -22,7 +22,7 @@ pims:
     cookie-secure: ${COOKIE_SECURE:true}
   image:
     storage-directory: ${IMAGE_STORAGE_DIRECTORY:uploads/images}
-    max-file-size: ${IMAGE_MAX_FILE_SIZE:5242880}
+    max-file-size: ${IMAGE_MAX_FILE_SIZE:100000}
     max-images-per-item: ${IMAGE_MAX_IMAGES_PER_ITEM:5}
 springdoc:
   api-docs:

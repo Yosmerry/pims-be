@@ -44,14 +44,13 @@ public class ImageService {
   private static final String IMAGE_FIELD = "image";
   private static final String INVENTORY_ITEM_FIELD = "inventoryItem";
   private static final String FILE_FIELD = "file";
-  private static final String JPEG_CONTENT_TYPE = "image/jpeg";
-  private static final String PNG_CONTENT_TYPE = "image/png";
-  private static final byte[] JPEG_SIGNATURE = {
-      (byte) 0xFF, (byte) 0xD8, (byte) 0xFF
-  };
-  private static final byte[] PNG_SIGNATURE = {
-      (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A
-  };
+  private static final String WEBP_CONTENT_TYPE = "image/webp";
+  private static final byte[] RIFF_SIGNATURE = {0x52, 0x49, 0x46, 0x46};
+  private static final byte[] WEBP_SIGNATURE = {0x57, 0x45, 0x42, 0x50};
+  private static final byte[] VP8_SIGNATURE = {0x56, 0x50, 0x38, 0x20};
+  private static final byte[] VP8L_SIGNATURE = {0x56, 0x50, 0x38, 0x4C};
+  private static final byte[] VP8X_SIGNATURE = {0x56, 0x50, 0x38, 0x58};
+  private static final int WEBP_HEADER_LENGTH = 16;
 
   private final ItemImageRepository itemImageRepository;
   private final InventoryItemRepository inventoryItemRepository;
@@ -69,9 +68,8 @@ public class ImageService {
     validateFile(file);
 
     String contentType = file.getContentType();
-    String extension = resolveExtension(contentType);
     String originalFilename = resolveOriginalFilename(file.getOriginalFilename());
-    String storedFilename = UUID.randomUUID() + extension;
+    String storedFilename = UUID.randomUUID() + ".webp";
     Path relativePath = Path.of(inventoryItemCode, storedFilename);
     Path storedPath = store(file, relativePath);
 
@@ -200,12 +198,11 @@ public class ImageService {
     }
 
     String contentType = file.getContentType();
-    if (!JPEG_CONTENT_TYPE.equals(contentType)
-        && !PNG_CONTENT_TYPE.equals(contentType)) {
+    if (!WEBP_CONTENT_TYPE.equals(contentType)) {
       throw fileValidationError(ErrorCodes.UNSUPPORTED_FILE_TYPE);
     }
 
-    if (!hasValidSignature(file, contentType)) {
+    if (!hasValidWebpSignature(file)) {
       throw fileValidationError(ErrorCodes.INVALID);
     }
   }
@@ -219,35 +216,29 @@ public class ImageService {
     return imageCount;
   }
 
-  private boolean hasValidSignature(MultipartFile file, String contentType) {
+  private boolean hasValidWebpSignature(MultipartFile file) {
     try (InputStream inputStream = file.getInputStream()) {
-      byte[] header = inputStream.readNBytes(PNG_SIGNATURE.length);
-      if (JPEG_CONTENT_TYPE.equals(contentType)) {
-        return startsWith(header, JPEG_SIGNATURE);
-      }
-      return startsWith(header, PNG_SIGNATURE);
+      byte[] header = inputStream.readNBytes(WEBP_HEADER_LENGTH);
+      return matchesAt(header, RIFF_SIGNATURE, 0)
+          && matchesAt(header, WEBP_SIGNATURE, 8)
+          && (matchesAt(header, VP8_SIGNATURE, 12)
+              || matchesAt(header, VP8L_SIGNATURE, 12)
+              || matchesAt(header, VP8X_SIGNATURE, 12));
     } catch (IOException exception) {
       throw new ApiFileStorageException(exception);
     }
   }
 
-  private boolean startsWith(byte[] value, byte[] prefix) {
-    if (value.length < prefix.length) {
+  private boolean matchesAt(byte[] value, byte[] expected, int offset) {
+    if (value.length < offset + expected.length) {
       return false;
     }
-    for (int index = 0; index < prefix.length; index++) {
-      if (value[index] != prefix[index]) {
+    for (int index = 0; index < expected.length; index++) {
+      if (value[offset + index] != expected[index]) {
         return false;
       }
     }
     return true;
-  }
-
-  private String resolveExtension(String contentType) {
-    if (JPEG_CONTENT_TYPE.equals(contentType)) {
-      return ".jpg";
-    }
-    return ".png";
   }
 
   private String resolveOriginalFilename(String originalFilename) {

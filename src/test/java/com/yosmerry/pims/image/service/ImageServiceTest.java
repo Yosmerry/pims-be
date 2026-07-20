@@ -39,7 +39,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ImageServiceTest {
 
-  private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
+  private static final long MAX_FILE_SIZE = 100_000;
   private static final int MAX_IMAGES_PER_ITEM = 5;
 
   @TempDir
@@ -88,24 +88,24 @@ class ImageServiceTest {
 
     ImageResponse response = imageService.upload(
         "ITM000001",
-        pngFile());
+        webpFile());
 
     assertThat(response.code()).isEqualTo("IMG000001");
-    assertThat(response.originalFilename()).isEqualTo("laptop.png");
+    assertThat(response.originalFilename()).isEqualTo("laptop.webp");
     assertThat(response.primary()).isTrue();
     assertThat(response.url()).isEqualTo("/api/v1/images/IMG000001");
 
     ArgumentCaptor<ItemImage> imageCaptor = ArgumentCaptor.forClass(ItemImage.class);
     verify(itemImageRepository).save(imageCaptor.capture());
     ItemImage savedImage = imageCaptor.getValue();
-    assertThat(savedImage.getStoredFilename()).endsWith(".png");
+    assertThat(savedImage.getStoredFilename()).endsWith(".webp");
     assertThat(temporaryDirectory.resolve(savedImage.getStoragePath()))
         .exists()
         .isRegularFile();
   }
 
   @Test
-  void shouldRejectUnsupportedFileType() {
+  void shouldRejectNonWebpFileType() {
     when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
     when(inventoryItemRepository.findByCodeAndUserCodeAndMarkForDeleteFalse(
         "ITM000001",
@@ -113,9 +113,9 @@ class ImageServiceTest {
         .thenReturn(Optional.of(inventoryItem()));
     MockMultipartFile file = new MockMultipartFile(
         "file",
-        "notes.txt",
-        "text/plain",
-        "not an image".getBytes(StandardCharsets.UTF_8));
+        "laptop.png",
+        "image/png",
+        new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47});
 
     assertThatThrownBy(() -> imageService.upload("ITM000001", file))
         .isInstanceOf(ApiValidationException.class)
@@ -135,7 +135,7 @@ class ImageServiceTest {
         .countByInventoryItemCodeAndMarkForDeleteFalse("ITM000001"))
         .thenReturn((long) MAX_IMAGES_PER_ITEM);
 
-    assertThatThrownBy(() -> imageService.upload("ITM000001", pngFile()))
+    assertThatThrownBy(() -> imageService.upload("ITM000001", webpFile()))
         .isInstanceOf(ApiValidationException.class)
         .satisfies(exception -> assertThat(
             ((ApiValidationException) exception).getErrors())
@@ -151,8 +151,8 @@ class ImageServiceTest {
         .thenReturn(Optional.of(inventoryItem()));
     MockMultipartFile file = new MockMultipartFile(
         "file",
-        "large.png",
-        "image/png",
+        "large.webp",
+        "image/webp",
         new byte[(int) MAX_FILE_SIZE + 1]);
 
     assertThatThrownBy(() -> imageService.upload("ITM000001", file))
@@ -171,9 +171,9 @@ class ImageServiceTest {
         .thenReturn(Optional.of(inventoryItem()));
     MockMultipartFile file = new MockMultipartFile(
         "file",
-        "fake.png",
-        "image/png",
-        "not a png".getBytes(StandardCharsets.UTF_8));
+        "fake.webp",
+        "image/webp",
+        "not a webp".getBytes(StandardCharsets.UTF_8));
 
     assertThatThrownBy(() -> imageService.upload("ITM000001", file))
         .isInstanceOf(ApiValidationException.class)
@@ -190,7 +190,7 @@ class ImageServiceTest {
         "USR000001"))
         .thenReturn(Optional.empty());
 
-    assertThatThrownBy(() -> imageService.upload("ITM000002", pngFile()))
+    assertThatThrownBy(() -> imageService.upload("ITM000002", webpFile()))
         .isInstanceOf(ApiResourceNotFoundException.class)
         .hasMessage("NotFound");
   }
@@ -222,9 +222,9 @@ class ImageServiceTest {
 
   @Test
   void shouldGetImageContentForOwnedInventoryItem() throws IOException {
-    Path imagePath = temporaryDirectory.resolve("ITM000001/stored.png");
+    Path imagePath = temporaryDirectory.resolve("ITM000001/stored.webp");
     Files.createDirectories(imagePath.getParent());
-    Files.write(imagePath, pngBytes());
+    Files.write(imagePath, webpBytes());
     ItemImage itemImage = itemImage();
 
     when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
@@ -237,16 +237,16 @@ class ImageServiceTest {
 
     ImageContent response = imageService.findContent("IMG000001");
 
-    assertThat(response.contentType()).isEqualTo("image/png");
-    assertThat(response.originalFilename()).isEqualTo("laptop.png");
+    assertThat(response.contentType()).isEqualTo("image/webp");
+    assertThat(response.originalFilename()).isEqualTo("laptop.webp");
     assertThat(response.resource().exists()).isTrue();
   }
 
   @Test
   void shouldDeletePrimaryImageAndPromoteNextImage() throws IOException {
-    Path imagePath = temporaryDirectory.resolve("ITM000001/stored.png");
+    Path imagePath = temporaryDirectory.resolve("ITM000001/stored.webp");
     Files.createDirectories(imagePath.getParent());
-    Files.write(imagePath, pngBytes());
+    Files.write(imagePath, webpBytes());
     ItemImage itemImage = itemImage();
     ItemImage nextImage = secondaryItemImage();
 
@@ -274,11 +274,11 @@ class ImageServiceTest {
 
   @Test
   void shouldDeleteAllImagesForDeletedInventoryItem() throws IOException {
-    Path firstPath = temporaryDirectory.resolve("ITM000001/stored.png");
-    Path secondPath = temporaryDirectory.resolve("ITM000001/stored-2.png");
+    Path firstPath = temporaryDirectory.resolve("ITM000001/stored.webp");
+    Path secondPath = temporaryDirectory.resolve("ITM000001/stored-2.webp");
     Files.createDirectories(firstPath.getParent());
-    Files.write(firstPath, pngBytes());
-    Files.write(secondPath, pngBytes());
+    Files.write(firstPath, webpBytes());
+    Files.write(secondPath, webpBytes());
     ItemImage firstImage = itemImage();
     ItemImage secondImage = secondaryItemImage();
 
@@ -297,19 +297,20 @@ class ImageServiceTest {
     verify(itemImageRepository).saveAll(List.of(firstImage, secondImage));
   }
 
-  private MockMultipartFile pngFile() {
+  private MockMultipartFile webpFile() {
     return new MockMultipartFile(
         "file",
-        "laptop.png",
-        "image/png",
-        pngBytes());
+        "laptop.webp",
+        "image/webp",
+        webpBytes());
   }
 
-  private byte[] pngBytes() {
+  private byte[] webpBytes() {
     return new byte[] {
-        (byte) 0x89, 0x50, 0x4E, 0x47,
-        0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x01
+        0x52, 0x49, 0x46, 0x46,
+        0x0C, 0x00, 0x00, 0x00,
+        0x57, 0x45, 0x42, 0x50,
+        0x56, 0x50, 0x38, 0x58
     };
   }
 
@@ -332,11 +333,11 @@ class ImageServiceTest {
     ItemImage itemImage = new ItemImage();
     itemImage.setCode("IMG000001");
     itemImage.setInventoryItemCode("ITM000001");
-    itemImage.setOriginalFilename("laptop.png");
-    itemImage.setStoredFilename("stored.png");
-    itemImage.setContentType("image/png");
-    itemImage.setFileSize((long) pngBytes().length);
-    itemImage.setStoragePath("ITM000001/stored.png");
+    itemImage.setOriginalFilename("laptop.webp");
+    itemImage.setStoredFilename("stored.webp");
+    itemImage.setContentType("image/webp");
+    itemImage.setFileSize((long) webpBytes().length);
+    itemImage.setStoragePath("ITM000001/stored.webp");
     itemImage.setPrimary(true);
     return itemImage;
   }
@@ -345,11 +346,11 @@ class ImageServiceTest {
     ItemImage itemImage = new ItemImage();
     itemImage.setCode("IMG000002");
     itemImage.setInventoryItemCode("ITM000001");
-    itemImage.setOriginalFilename("laptop-2.png");
-    itemImage.setStoredFilename("stored-2.png");
-    itemImage.setContentType("image/png");
-    itemImage.setFileSize((long) pngBytes().length);
-    itemImage.setStoragePath("ITM000001/stored-2.png");
+    itemImage.setOriginalFilename("laptop-2.webp");
+    itemImage.setStoredFilename("stored-2.webp");
+    itemImage.setContentType("image/webp");
+    itemImage.setFileSize((long) webpBytes().length);
+    itemImage.setStoragePath("ITM000001/stored-2.webp");
     itemImage.setPrimary(false);
     return itemImage;
   }
