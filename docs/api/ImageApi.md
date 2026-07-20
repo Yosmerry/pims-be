@@ -14,8 +14,8 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 - Endpoint: `/api/v1/inventory-items/{inventoryItemCode}/images`
 - Method: `POST`
 - Content type: `multipart/form-data`
-- Allowed files: JPEG and PNG
-- Maximum file size: 5 MB
+- Allowed files: WebP only
+- Maximum file size: 100 KB (100,000 bytes)
 - Maximum images per inventory item: 5
 - Behavior: the first image uploaded for an item is marked as primary
 
@@ -23,7 +23,7 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 
 | Part | Type | Required | Description |
 | --- | --- | --- | --- |
-| `file` | Binary | Yes | JPEG or PNG image, maximum 5 MB |
+| `file` | Binary | Yes | WebP image, maximum 100 KB |
 
 Example:
 
@@ -33,7 +33,7 @@ curl --request POST \
   --header 'Authorization: Bearer <access-token>' \
   --header 'X-CHANNEL-ID: WEB' \
   --header 'X-SERVICE-ID: pims-fe' \
-  --form 'file=@laptop.png'
+  --form 'file=@laptop.webp'
 ```
 
 ### Response Success
@@ -46,9 +46,9 @@ curl --request POST \
   "data": {
     "code": "IMG000001",
     "inventoryItemCode": "ITM000001",
-    "originalFilename": "laptop.png",
-    "contentType": "image/png",
-    "fileSize": 245760,
+    "originalFilename": "laptop.webp",
+    "contentType": "image/webp",
+    "fileSize": 84521,
     "primary": true,
     "url": "/api/v1/images/IMG000001",
     "createdDate": 1784509200000
@@ -165,9 +165,9 @@ Only the applicable error code is returned.
     {
       "code": "IMG000001",
       "inventoryItemCode": "ITM000001",
-      "originalFilename": "laptop.png",
-      "contentType": "image/png",
-      "fileSize": 245760,
+      "originalFilename": "laptop.webp",
+      "contentType": "image/webp",
+      "fileSize": 84521,
       "primary": true,
       "url": "/api/v1/images/IMG000001",
       "createdDate": 1784509200000
@@ -233,7 +233,7 @@ When the inventory item has no images, `data` is an empty array.
 
 - Endpoint: `/api/v1/images/{imageCode}`
 - Method: `GET`
-- Response content type: `image/jpeg` or `image/png`
+- Response content type: `image/webp`
 - Response body: binary image content
 
 The endpoint requires the same authorization and common headers. It returns the
@@ -385,7 +385,7 @@ the response as a blob and create an object URL for display.
 pims:
   image:
     storage-directory: ${IMAGE_STORAGE_DIRECTORY:uploads/images}
-    max-file-size: ${IMAGE_MAX_FILE_SIZE:5242880}
+    max-file-size: ${IMAGE_MAX_FILE_SIZE:100000}
     max-images-per-item: ${IMAGE_MAX_IMAGES_PER_ITEM:5}
 ```
 
