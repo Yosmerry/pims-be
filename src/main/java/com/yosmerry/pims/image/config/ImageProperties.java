@@ -7,5 +7,6 @@ import java.nio.file.Path;
 @ConfigurationProperties(prefix = "pims.image")
 public record ImageProperties(
     Path storageDirectory,
-    long maxFileSize) {
+    long maxFileSize,
+    int maxImagesPerItem) {
 }

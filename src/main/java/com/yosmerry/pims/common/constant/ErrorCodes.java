@@ -27,6 +27,7 @@ public final class ErrorCodes {
   public static final String MINIMUM_0 = "Minimum0";
   public static final String MINIMUM_1 = "Minimum1";
   public static final String MAXIMUM_50 = "Maximum50";
+  public static final String MAXIMUM_5 = "Maximum5";
   public static final String FUTURE_DATE = "FutureDate";
   public static final String FILE_TOO_LARGE = "FileTooLarge";
   public static final String UNSUPPORTED_FILE_TYPE = "UnsupportedFileType";

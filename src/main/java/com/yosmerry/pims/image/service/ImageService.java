@@ -65,6 +65,7 @@ public class ImageService {
       MultipartFile file) {
     User user = currentUserProvider.requireActiveUser();
     requireOwnedInventoryItem(inventoryItemCode, user.getCode());
+    long imageCount = requireImageCapacity(inventoryItemCode);
     validateFile(file);
 
     String contentType = file.getContentType();
@@ -83,8 +84,7 @@ public class ImageService {
       itemImage.setContentType(contentType);
       itemImage.setFileSize(file.getSize());
       itemImage.setStoragePath(relativePath.toString());
-      itemImage.setPrimary(!itemImageRepository
-          .existsByInventoryItemCodeAndMarkForDeleteFalse(inventoryItemCode));
+      itemImage.setPrimary(imageCount == 0);
       itemImage.setCreatedBy(user.getEmail());
       itemImage.setUpdatedBy(user.getEmail());
 
@@ -208,6 +208,15 @@ public class ImageService {
     if (!hasValidSignature(file, contentType)) {
       throw fileValidationError(ErrorCodes.INVALID);
     }
+  }
+
+  private long requireImageCapacity(String inventoryItemCode) {
+    long imageCount = itemImageRepository
+        .countByInventoryItemCodeAndMarkForDeleteFalse(inventoryItemCode);
+    if (imageCount >= imageProperties.maxImagesPerItem()) {
+      throw fileValidationError(ErrorCodes.MAXIMUM_5);
+    }
+    return imageCount;
   }
 
   private boolean hasValidSignature(MultipartFile file, String contentType) {

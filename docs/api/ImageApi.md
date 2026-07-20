@@ -16,6 +16,7 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 - Content type: `multipart/form-data`
 - Allowed files: JPEG and PNG
 - Maximum file size: 5 MB
+- Maximum images per inventory item: 5
 - Behavior: the first image uploaded for an item is marked as primary
 
 ### Request Part
@@ -75,7 +76,8 @@ Only the applicable error code is returned.
       "FileTooLarge",
       "UnsupportedFileType",
       "Invalid",
-      "CharacterMoreThan255"
+      "CharacterMoreThan255",
+      "Maximum5"
     ]
   },
   "metadata": {
@@ -384,6 +386,7 @@ pims:
   image:
     storage-directory: ${IMAGE_STORAGE_DIRECTORY:uploads/images}
     max-file-size: ${IMAGE_MAX_FILE_SIZE:5242880}
+    max-images-per-item: ${IMAGE_MAX_IMAGES_PER_ITEM:5}
 ```
 
 The default local directory is `uploads/images`. Files are stored below a folder
