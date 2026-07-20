@@ -23,6 +23,7 @@ pims:
   image:
     storage-directory: ${IMAGE_STORAGE_DIRECTORY:uploads/images}
     max-file-size: ${IMAGE_MAX_FILE_SIZE:5242880}
+    max-images-per-item: ${IMAGE_MAX_IMAGES_PER_ITEM:5}
 springdoc:
   api-docs:
     enabled: true

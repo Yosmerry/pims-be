@@ -40,6 +40,7 @@ import static org.mockito.Mockito.when;
 class ImageServiceTest {
 
   private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
+  private static final int MAX_IMAGES_PER_ITEM = 5;
 
   @TempDir
   private Path temporaryDirectory;
@@ -65,7 +66,10 @@ class ImageServiceTest {
         inventoryItemRepository,
         currentUserProvider,
         codeGenerator,
-        new ImageProperties(temporaryDirectory, MAX_FILE_SIZE));
+        new ImageProperties(
+            temporaryDirectory,
+            MAX_FILE_SIZE,
+            MAX_IMAGES_PER_ITEM));
   }
 
   @Test
@@ -77,8 +81,8 @@ class ImageServiceTest {
         .thenReturn(Optional.of(inventoryItem()));
     when(codeGenerator.next(CodeType.ITEM_IMAGE)).thenReturn("IMG000001");
     when(itemImageRepository
-        .existsByInventoryItemCodeAndMarkForDeleteFalse("ITM000001"))
-        .thenReturn(false);
+        .countByInventoryItemCodeAndMarkForDeleteFalse("ITM000001"))
+        .thenReturn(0L);
     when(itemImageRepository.save(any(ItemImage.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -118,6 +122,24 @@ class ImageServiceTest {
         .satisfies(exception -> assertThat(
             ((ApiValidationException) exception).getErrors())
             .containsEntry("file", List.of("UnsupportedFileType")));
+  }
+
+  @Test
+  void shouldRejectImageWhenInventoryItemReachedImageLimit() {
+    when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
+    when(inventoryItemRepository.findByCodeAndUserCodeAndMarkForDeleteFalse(
+        "ITM000001",
+        "USR000001"))
+        .thenReturn(Optional.of(inventoryItem()));
+    when(itemImageRepository
+        .countByInventoryItemCodeAndMarkForDeleteFalse("ITM000001"))
+        .thenReturn((long) MAX_IMAGES_PER_ITEM);
+
+    assertThatThrownBy(() -> imageService.upload("ITM000001", pngFile()))
+        .isInstanceOf(ApiValidationException.class)
+        .satisfies(exception -> assertThat(
+            ((ApiValidationException) exception).getErrors())
+            .containsEntry("file", List.of("Maximum5")));
   }
 
   @Test
@@ -171,6 +193,31 @@ class ImageServiceTest {
     assertThatThrownBy(() -> imageService.upload("ITM000002", pngFile()))
         .isInstanceOf(ApiResourceNotFoundException.class)
         .hasMessage("NotFound");
+  }
+
+  @Test
+  void shouldGetImagesForOwnedInventoryItem() {
+    ItemImage primaryImage = itemImage();
+    ItemImage secondaryImage = secondaryItemImage();
+
+    when(currentUserProvider.requireActiveUser()).thenReturn(currentUser());
+    when(inventoryItemRepository.findByCodeAndUserCodeAndMarkForDeleteFalse(
+        "ITM000001",
+        "USR000001"))
+        .thenReturn(Optional.of(inventoryItem()));
+    when(itemImageRepository
+        .findAllByInventoryItemCodeAndMarkForDeleteFalseOrderByPrimaryDescCreatedDateAsc(
+            "ITM000001"))
+        .thenReturn(List.of(primaryImage, secondaryImage));
+
+    List<ImageResponse> response = imageService.findAll("ITM000001");
+
+    assertThat(response)
+        .extracting(ImageResponse::code)
+        .containsExactly("IMG000001", "IMG000002");
+    assertThat(response.getFirst().primary()).isTrue();
+    assertThat(response.getFirst().url())
+        .isEqualTo("/api/v1/images/IMG000001");
   }
 
   @Test

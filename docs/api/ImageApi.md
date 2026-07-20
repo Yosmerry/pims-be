@@ -16,6 +16,7 @@ X-REQUEST-ID: abf25843-07f8-46fe-9823-0a6e4fd7499f
 - Content type: `multipart/form-data`
 - Allowed files: JPEG and PNG
 - Maximum file size: 5 MB
+- Maximum images per inventory item: 5
 - Behavior: the first image uploaded for an item is marked as primary
 
 ### Request Part
@@ -75,7 +76,8 @@ Only the applicable error code is returned.
       "FileTooLarge",
       "UnsupportedFileType",
       "Invalid",
-      "CharacterMoreThan255"
+      "CharacterMoreThan255",
+      "Maximum5"
     ]
   },
   "metadata": {
@@ -139,6 +141,87 @@ Only the applicable error code is returned.
   "code": 500,
   "errors": {
     "file": ["StorageFailed"]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+## Get Inventory Item Images
+
+- Endpoint: `/api/v1/inventory-items/{inventoryItemCode}/images`
+- Method: `GET`
+- Result order: primary image first, then creation date ascending
+
+### Response Success
+
+- HTTP status: `200 OK`
+
+```json
+{
+  "code": 200,
+  "data": [
+    {
+      "code": "IMG000001",
+      "inventoryItemCode": "ITM000001",
+      "originalFilename": "laptop.png",
+      "contentType": "image/png",
+      "fileSize": 245760,
+      "primary": true,
+      "url": "/api/v1/images/IMG000001",
+      "createdDate": 1784509200000
+    }
+  ],
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+When the inventory item has no images, `data` is an empty array.
+
+### Response Error
+
+#### Inventory Item Not Found
+
+- HTTP status: `404 Not Found`
+- Returned when the item does not exist or is not owned by the current user
+
+```json
+{
+  "code": 404,
+  "errors": {
+    "inventoryItem": ["NotFound"]
+  },
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Unauthorized
+
+- HTTP status: `401 Unauthorized`
+
+```json
+{
+  "code": 401,
+  "metadata": {
+    "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
+  }
+}
+```
+
+#### Inactive User
+
+- HTTP status: `403 Forbidden`
+
+```json
+{
+  "code": 403,
+  "errors": {
+    "authentication": ["UserInactive"]
   },
   "metadata": {
     "requestId": "abf25843-07f8-46fe-9823-0a6e4fd7499f"
@@ -303,6 +386,7 @@ pims:
   image:
     storage-directory: ${IMAGE_STORAGE_DIRECTORY:uploads/images}
     max-file-size: ${IMAGE_MAX_FILE_SIZE:5242880}
+    max-images-per-item: ${IMAGE_MAX_IMAGES_PER_ITEM:5}
 ```
 
 The default local directory is `uploads/images`. Files are stored below a folder

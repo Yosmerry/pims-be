@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -48,6 +49,17 @@ public class ImageController {
     ImageResponse response = imageService.upload(inventoryItemCode, file);
 
     return ResponseUtils.created(response, requestHeaders.requestId());
+  }
+
+  @GetMapping(BasePathNames.INVENTORY_ITEMS + "/{inventoryItemCode}/images")
+  @Operation(description = "Get images for an inventory item")
+  public ResponseEntity<ApiResponse<List<ImageResponse>>> findAll(
+      @Parameter(hidden = true) @RequestHeader HttpHeaders httpHeaders,
+      @PathVariable String inventoryItemCode) {
+    RequestHeaders requestHeaders = RequestHeaders.from(httpHeaders);
+    List<ImageResponse> response = imageService.findAll(inventoryItemCode);
+
+    return ResponseUtils.ok(response, requestHeaders.requestId());
   }
 
   @GetMapping(BasePathNames.IMAGES + "/{imageCode}")
